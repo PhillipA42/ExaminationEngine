@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Portal{% endblock %} - ExaminationEngine</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        :root {
+            --primary-navy: #0f172a;
+            --secondary-navy: #1e293b;
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --bg-canvas: #f8fafc;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navbar Styling */
+        .navbar-custom {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-badge {
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            background: rgba(37, 99, 235, 0.25);
+            border: 1px solid rgba(147, 197, 253, 0.3);
+            color: #93c5fd;
+        }
+
+        /* Card Enhancements */
+        .card-custom {
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .card-custom-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Buttons & Forms */
+        .btn-primary-custom {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #ffffff;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary-custom:hover {
+            background-color: var(--accent-blue-hover);
+            border-color: var(--accent-blue-hover);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.15);
+        }
+
+        /* Badge Customization */
+        .badge-soft-success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .badge-soft-warning {
+            background-color: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fef08a;
+        }
+
+        .badge-soft-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .badge-soft-primary {
+            background-color: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        .badge-soft-secondary {
+            background-color: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: auto;
+            border-top: 1px solid #e2e8f0;
+            background: #ffffff;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top py-2">
+        <div class="container-fluid px-3 px-lg-4">
+            
+            <!-- Brand -->
+            {% if user.is_authenticated and user.student_profile %}
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'student_timetable' %}">
+                <i class="bi bi-mortarboard-fill text-primary fs-4"></i>
+                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
+                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Student Portal</span>
+            </a>
+            {% elif user.is_authenticated and user.lecturer_profile %}
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'invigilator_dashboard' %}">
+                <i class="bi bi-shield-check text-primary fs-4"></i>
+                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
+                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Invigilator Portal</span>
+            </a>
+            {% else %}
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                <i class="bi bi-shield-check text-primary fs-4"></i>
+                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
+            </a>
+            {% endif %}
+
+            {% if user.is_authenticated %}
+            <div class="d-flex align-items-center ms-auto gap-2 gap-md-3">
+                
+                <!-- Student Navigation -->
+                {% if user.student_profile %}
+                <div class="text-end d-none d-md-block text-white-50">
+                    <div class="fw-semibold text-white small">
+                        {{ user.get_full_name|default:user.username }}
+                    </div>
+                    <span class="badge bg-primary bg-opacity-50 text-white font-monospace" style="font-size: 0.7rem;">
+                        {{ user.student_profile.registration_number }}
+                    </span>
+                </div>
+
+                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1">
+                    <i class="bi bi-calendar3"></i>
+                    <span class="d-none d-sm-inline">My Timetable</span>
+                </a>
+
+                <a href="{% url 'student_exam_pass' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1">
+                    <i class="bi bi-card-heading"></i>
+                    <span class="d-none d-sm-inline">Exam Pass</span>
+                </a>
+
+                <a href="{% url 'student_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline">Logout</span>
+                </a>
+
+                <!-- Lecturer Navigation -->
+                {% elif user.lecturer_profile %}
+                <div class="text-end d-none d-md-block text-white-50">
+                    <div class="fw-semibold text-white small">
+                        {{ user.get_full_name|default:user.username }}
+                    </div>
+                    <span class="badge bg-secondary bg-opacity-50 text-white font-monospace" style="font-size: 0.7rem;">
+                        {{ user.lecturer_profile.staff_number }}
+                    </span>
+                </div>
+
+                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1">
+                    <i class="bi bi-grid-1x2"></i>
+                    <span class="d-none d-sm-inline">Duties</span>
+                </a>
+
+                <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline">Logout</span>
+                </a>
+
+                <!-- Superuser / Admin Navigation -->
+                {% else %}
+                <div class="text-end d-none d-md-block text-white-50">
+                    <div class="fw-semibold text-white small">{{ user.username }}</div>
+                    <span class="badge bg-info text-dark" style="font-size: 0.7rem;">Admin</span>
+                </div>
+                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light">Student View</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light">Invigilator View</a>
+                <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger">Logout</a>
+                {% endif %}
+
+            </div>
+            {% else %}
+            <div class="d-flex align-items-center ms-auto gap-2">
+                <a href="{% url 'student_login' %}" class="btn btn-sm btn-outline-info">Student Login</a>
+                <a href="{% url 'invigilator_login' %}" class="btn btn-sm btn-outline-light">Invigilator Login</a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Global Flash Messages -->
+    <div class="container-fluid px-3 px-lg-4 mt-3">
+        {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm card-custom border-0 d-flex align-items-center justify-content-between" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    {% if message.tags == 'success' %}
+                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    {% else %}
+                        <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="container-fluid px-3 px-lg-4 py-3 flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="py-3 text-center text-muted small">
+        <div class="container">
+            <span>&copy; 2026 ExaminationEngine &bull; University Examination & Timetabling Automation</span>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5.3 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

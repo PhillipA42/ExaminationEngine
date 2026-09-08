@@ -1,11 +1,11 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import InvigilatorDutyViewSet, ExamAttendanceViewSet
-
-router = DefaultRouter()
-router.register(r'duties', InvigilatorDutyViewSet, basename='invigilator-duties')
-router.register(r'attendance', ExamAttendanceViewSet, basename='exam-attendance')
+from django.urls import path
+from . import web_views
 
 urlpatterns = [
-    path('', include(router.urls)),
+    # Invigilator Web Portal Endpoints
+    path('login/', web_views.invigilator_login, name='invigilator_login'),
+    path('logout/', web_views.invigilator_logout, name='invigilator_logout'),
+    path('dashboard/', web_views.invigilator_dashboard, name='invigilator_dashboard'),
+    path('session/<int:duty_id>/', web_views.session_roster, name='session_roster'),
+    path('session/<int:duty_id>/checkin/', web_views.student_checkin, name='student_checkin'),
 ]

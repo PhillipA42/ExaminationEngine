@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+
+{% block title %}My Examination Timetable{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <!-- Student Profile & Exam Period Header -->
+    <div class="col-12">
+        <div class="card card-custom bg-white p-4">
+            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        {{ student.user.first_name|first|default:student.user.username|first|upper }}
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h4 class="fw-bold mb-0 text-dark">
+                                {{ student.user.get_full_name|default:student.user.username }}
+                            </h4>
+                            <span class="badge bg-primary text-white font-monospace px-2.5 py-1">
+                                {{ student.registration_number }}
+                            </span>
+                        </div>
+                        <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
+                            <span><i class="bi bi-mortarboard me-1"></i>{{ student.course.name }} (Yr {{ student.year_of_study }})</span>
+                            <span>&bull;</span>
+                            <span><i class="bi bi-building me-1"></i>{{ student.department.name }}</span>
+                            <span>&bull;</span>
+                            <span>{{ student.school.name }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button to Examination Pass -->
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{% url 'student_exam_pass' %}" class="btn btn-primary-custom d-flex align-items-center gap-2 px-3 py-2 shadow-sm">
+                        <i class="bi bi-card-heading fs-5"></i>
+                        <div class="text-start">
+                            <div class="fw-bold" style="font-size: 0.85rem; line-height: 1.1;">Examination Pass</div>
+                            <div class="small opacity-75" style="font-size: 0.7rem;">Print / Download PDF</div>
+                        </div>
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Examination Period & Stats Bar -->
+    <div class="col-12">
+        <div class="row g-3">
+            
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-custom p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Total Registered Exams</div>
+                            <h3 class="fw-bold mb-0 text-dark">{{ total_exams }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-3">
+                            <i class="bi bi-journal-check fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-custom p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Upcoming Exams</div>
+                            <h3 class="fw-bold mb-0 text-primary">{{ upcoming_count }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 text-info p-3 rounded-3">
+                            <i class="bi bi-clock-history fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-custom p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Completed Papers</div>
+                            <h3 class="fw-bold mb-0 text-success">{{ completed_count }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 text-success p-3 rounded-3">
+                            <i class="bi bi-check2-all fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="card card-custom p-3 bg-white h-100">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="text-muted small fw-medium">Academic Period</div>
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 140px;" title="{{ active_period.name|default:'2026/2027 Main Exams' }}">
+                                {{ active_period.academic_year|default:"2026/2027" }} Sem {{ active_period.semester|default:1 }}
+                            </div>
+                        </div>
+                        <div class="bg-secondary bg-opacity-10 text-secondary p-3 rounded-3">
+                            <i class="bi bi-calendar3 fs-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Spotlight Banner for Next Exam -->
+    {% if next_exam %}
+    <div class="col-12">
+        <div class="card card-custom bg-gradient text-white p-3 p-md-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                <div>
+                    <span class="badge bg-warning text-dark fw-bold mb-2">
+                        <i class="bi bi-bell-fill me-1"></i>
+                        {% if next_exam.is_today %}TODAY'S EXAMINATION{% else %}NEXT UPCOMING EXAMINATION{% endif %}
+                    </span>
+                    <h4 class="fw-bold mb-1">{{ next_exam.alloc.examination.unit.code }} - {{ next_exam.alloc.examination.unit.name }}</h4>
+                    <div class="text-white-50 small">
+                        <i class="bi bi-calendar-event me-1"></i> {{ next_exam.schedule.exam_date|date:"l, d F Y" }} &bull;
+                        <i class="bi bi-clock me-1"></i> {{ next_exam.schedule.start_time|time:"H:i" }} - {{ next_exam.schedule.end_time|time:"H:i" }}
+                    </div>
+                </div>
+
+                <div class="bg-white bg-opacity-10 p-3 rounded-3 border border-white border-opacity-25 text-end">
+                    <div class="small text-white-50">Venue Location</div>
+                    <div class="fw-bold fs-5 text-white">{{ next_exam.alloc.room.name }}</div>
+                    <div class="small text-white-50">{{ next_exam.alloc.room.building.name }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Personalized Timetable Schedule Cards & Table -->
+    <div class="col-12">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-3">
+            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="bi bi-calendar4-week text-primary"></i>
+                <span>Personalized Examination Timetable</span>
+                <span class="badge bg-secondary rounded-pill font-monospace">{{ timetable_items|length }}</span>
+            </h5>
+
+            <div class="position-relative" style="min-width: 250px;">
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                <input type="text" id="timetableSearchInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Filter by Unit Code or Name..." onkeyup="filterTimetable()">
+            </div>
+        </div>
+
+        {% if timetable_items %}
+        
+        <!-- Desktop Table View -->
+        <div class="card card-custom bg-white d-none d-lg-block">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="timetableDesktopTable">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th style="width: 60px;" class="text-center">#</th>
+                            <th>Unit Information</th>
+                            <th>Date & Time Slot</th>
+                            <th>Building & Hall / Room</th>
+                            <th>Allocated Seat</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in timetable_items %}
+                        <tr class="timetable-item-row" data-search="{{ item.unit.code|lower }} {{ item.unit.name|lower }} {{ item.room.name|lower }}">
+                            <td class="text-center text-muted small font-monospace">{{ forloop.counter }}</td>
+
+                            <td>
+                                <span class="badge bg-primary text-white font-monospace mb-1">{{ item.unit.code }}</span>
+                                <div class="fw-bold text-dark">{{ item.unit.name }}</div>
+                                <div class="text-muted small">{{ item.unit.course.name }}</div>
+                            </td>
+
+                            <td>
+                                <div class="fw-semibold text-dark">
+                                    {% if item.schedule %}
+                                        <i class="bi bi-calendar3 text-primary me-1"></i>{{ item.schedule.exam_date|date:"l, d M Y" }}
+                                    {% else %}
+                                        <span class="text-muted">Date TBD</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    {% if item.schedule %}
+                                        <i class="bi bi-clock text-info me-1"></i>{{ item.schedule.start_time|time:"H:i" }} - {{ item.schedule.end_time|time:"H:i" }} ({{ item.exam.duration_minutes }}m)
+                                    {% else %}
+                                        Time TBD
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="fw-bold text-dark">
+                                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ item.room.name }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ item.room.building.name }} &bull; {{ item.room.floor.name|default:"Main Floor" }}
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace px-2 py-1">
+                                    {{ item.seat_number|default:"Pending On-Site" }}
+                                </span>
+                            </td>
+
+                            <td class="text-center">
+                                {% if item.is_today %}
+                                    <span class="badge bg-warning text-dark px-2.5 py-1.5"><i class="bi bi-exclamation-circle-fill me-1"></i>Today</span>
+                                {% elif item.is_upcoming %}
+                                    <span class="badge badge-soft-primary px-2.5 py-1.5"><i class="bi bi-clock-fill me-1"></i>Scheduled</span>
+                                {% else %}
+                                    <span class="badge badge-soft-success px-2.5 py-1.5"><i class="bi bi-check-circle-fill me-1"></i>Completed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Mobile & Tablet Card Layout -->
+        <div class="d-lg-none row g-3" id="timetableMobileContainer">
+            {% for item in timetable_items %}
+            <div class="col-12 col-md-6 timetable-item-card" data-search="{{ item.unit.code|lower }} {{ item.unit.name|lower }} {{ item.room.name|lower }}">
+                <div class="card card-custom bg-white p-3 h-100">
+                    
+                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <div>
+                            <span class="badge bg-primary text-white font-monospace mb-1">{{ item.unit.code }}</span>
+                            <h6 class="fw-bold text-dark mb-0">{{ item.unit.name }}</h6>
+                        </div>
+
+                        <div>
+                            {% if item.is_today %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>Today</span>
+                            {% elif item.is_upcoming %}
+                                <span class="badge badge-soft-primary"><i class="bi bi-clock-fill me-1"></i>Scheduled</span>
+                            {% else %}
+                                <span class="badge badge-soft-success"><i class="bi bi-check-circle-fill me-1"></i>Completed</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="p-2 bg-light rounded border small mb-2">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted"><i class="bi bi-calendar3 text-primary me-1"></i>Date:</span>
+                            <span class="fw-semibold text-dark">
+                                {% if item.schedule %}{{ item.schedule.exam_date|date:"D, d M Y" }}{% else %}TBD{% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted"><i class="bi bi-clock text-info me-1"></i>Time:</span>
+                            <span class="fw-semibold text-dark">
+                                {% if item.schedule %}{{ item.schedule.start_time|time:"H:i" }} - {{ item.schedule.end_time|time:"H:i" }}{% else %}TBD{% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Venue:</span>
+                            <span class="fw-bold text-dark">{{ item.room.name }} ({{ item.room.building.code }})</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between small text-muted mt-auto pt-1">
+                        <span>Seat: <strong class="text-dark font-monospace">{{ item.seat_number|default:"Pending On-Site" }}</strong></span>
+                        <span>{{ item.unit.course.code }}</span>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="card card-custom bg-white p-5 text-center">
+            <div class="text-muted mb-3">
+                <i class="bi bi-calendar-x fs-1"></i>
+            </div>
+            <h5 class="fw-bold text-dark">No Examination Schedule Found</h5>
+            <p class="text-muted small mb-0">You have no registered units scheduled for the current examination period.</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterTimetable() {
+        const query = document.getElementById('timetableSearchInput').value.trim().toLowerCase();
+        
+        // Filter desktop table rows
+        const rows = document.querySelectorAll('.timetable-item-row');
+        rows.forEach(row => {
+            const text = row.dataset.search || '';
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+
+        // Filter mobile cards
+        const cards = document.querySelectorAll('.timetable-item-card');
+        cards.forEach(card => {
+            const text = card.dataset.search || '';
+            card.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}

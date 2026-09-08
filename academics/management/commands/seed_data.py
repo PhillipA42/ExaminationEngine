@@ -2,20 +2,24 @@ from datetime import date, timedelta
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 
 from authentication.models import Role, UserRole
 from academics.models import School, Department, Course, Unit, Student, UnitRegistration, Lecturer
 from locations.models import Campus, Building, Floor, Room
-from scheduling.models import ExaminationPeriod, Examination
+from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, ExamRoomAllocation, StudentExamAllocation
+from scheduling.engine import TimetableSchedulerEngine
+from invigilators.models import InvigilatorDuty, ExamAttendance
+from malpractice.models import MalpracticeCase, MalpracticeEvidence
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Seeds database with realistic test data for timetable testing.'
+    help = 'Seeds database with realistic test data including lecturers, duties, attendance with booklets, and malpractice cases.'
 
     @transaction.atomic
     def handle(self, *args, **options):
-        self.stdout.write(self.style.WARNING('Seeding database with test data...'))
+        self.stdout.write(self.style.WARNING('Seeding database with comprehensive test data...'))
 
         # -------------------------------------------------------------
         # 1. ROLES
@@ -111,7 +115,42 @@ class Command(BaseCommand):
             units.append(u)
 
         # -------------------------------------------------------------
-        # 4. STUDENTS & UNIT REGISTRATION
+        # 4. LECTURERS & TEST ACCOUNTS
+        # -------------------------------------------------------------
+        lecturers_data = [
+            ('lec001', 'lec001@university.ac.ke', 'EMP-CS-001', 'Alan', 'Turing', 'Senior Lecturer'),
+            ('lec002', 'lec002@university.ac.ke', 'EMP-CS-002', 'Grace', 'Hopper', 'Professor'),
+            ('lec003', 'lec003@university.ac.ke', 'EMP-CS-003', 'Donald', 'Knuth', 'Associate Professor'),
+        ]
+
+        lecturers = []
+        for username, email, staff_no, first_name, last_name, designation in lecturers_data:
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': email,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                }
+            )
+            if created:
+                user.set_password('Password123!')
+                user.save()
+                UserRole.objects.create(user=user, role=lecturer_role)
+
+            lecturer_profile, _ = Lecturer.objects.get_or_create(
+                user=user,
+                defaults={
+                    'staff_number': staff_no,
+                    'department': department,
+                    'designation': designation,
+                    'status': 'ACTIVE'
+                }
+            )
+            lecturers.append(lecturer_profile)
+
+        # -------------------------------------------------------------
+        # 5. STUDENTS & UNIT REGISTRATION
         # -------------------------------------------------------------
         students_data = [
             ('std001', 'std001@university.ac.ke', 'CT101/0001/26', 'John', 'Doe'),
@@ -121,6 +160,7 @@ class Command(BaseCommand):
             ('std005', 'std005@university.ac.ke', 'CT101/0005/26', 'Brian', 'Ochieng'),
         ]
 
+        students = []
         for username, email, reg_no, first_name, last_name in students_data:
             user, created = User.objects.get_or_create(
                 username=username,
@@ -145,6 +185,7 @@ class Command(BaseCommand):
                     'year_of_study': 4
                 }
             )
+            students.append(student_profile)
 
             # Register student for all 4 units
             for unit in units:
@@ -157,7 +198,7 @@ class Command(BaseCommand):
                 )
 
         # -------------------------------------------------------------
-        # 5. EXAMINATION PERIOD & EXAMINATIONS
+        # 6. EXAMINATION PERIOD & EXAMINATIONS
         # -------------------------------------------------------------
         start_date = date.today() + timedelta(days=7)
         end_date = start_date + timedelta(days=14)
@@ -173,8 +214,9 @@ class Command(BaseCommand):
             }
         )
 
+        examinations = []
         for unit in units:
-            Examination.objects.get_or_create(
+            exam, _ = Examination.objects.get_or_create(
                 period=period,
                 unit=unit,
                 examination_type='FINAL',
@@ -183,7 +225,122 @@ class Command(BaseCommand):
                     'status': 'PENDING'
                 }
             )
+            examinations.append(exam)
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully seeded database!"))
-        self.stdout.write(self.style.SUCCESS(f"Created Exam Period ID: {period.id} ('{period.name}')"))
-        self.stdout.write(self.style.SUCCESS(f"Test Student Usernames: std001 through std005 (Password: Password123!)"))
+        # -------------------------------------------------------------
+        # 7. TIMETABLE GENERATION & SCHEDULING
+        # -------------------------------------------------------------
+        scheduler = TimetableSchedulerEngine(period.id)
+        scheduler.generate_timetable()
+
+        # -------------------------------------------------------------
+        # 8. INVIGILATOR DUTY ASSIGNMENTS
+        # -------------------------------------------------------------
+        # Assign invigilator duties for each scheduled exam
+        for i, exam in enumerate(examinations):
+            allocated_rooms = Room.objects.filter(allocated_exams__examination=exam)
+            assigned_room = allocated_rooms.first() or room_a
+
+            # Assign Chief Invigilator
+            chief_lecturer = lecturers[i % len(lecturers)]
+            InvigilatorDuty.objects.get_or_create(
+                examination=exam,
+                lecturer=chief_lecturer,
+                defaults={
+                    'room': assigned_room,
+                    'role': 'CHIEF_INVIGILATOR',
+                    'status': 'CONFIRMED'
+                }
+            )
+
+            # Assign Assistant / Invigilator
+            assistant_lecturer = lecturers[(i + 1) % len(lecturers)]
+            InvigilatorDuty.objects.get_or_create(
+                examination=exam,
+                lecturer=assistant_lecturer,
+                defaults={
+                    'room': assigned_room,
+                    'role': 'INVIGILATOR',
+                    'status': 'ASSIGNED'
+                }
+            )
+
+        # -------------------------------------------------------------
+        # 9. SAMPLE EXAM ATTENDANCE & BOOKLET SERIAL NUMBERS
+        # -------------------------------------------------------------
+        # Generate attendance records for the first scheduled exam (e.g. CSC401)
+        primary_exam = examinations[0]
+        allocated_room = Room.objects.filter(allocated_exams__examination=primary_exam).first() or room_a
+        recording_lecturer = lecturers[0]
+
+        for idx, student in enumerate(students, start=1):
+            booklet_number = f"BKT-2026-{primary_exam.unit.code}-{idx:04d}"
+            # Mark first 4 students present, 5th student absent to show realistic scenario
+            is_present = (idx != 5)
+            remarks = "Candidate verified via Student ID card & signature." if is_present else "Absent without prior notice."
+
+            ExamAttendance.objects.get_or_create(
+                examination=primary_exam,
+                student=student,
+                defaults={
+                    'room': allocated_room,
+                    'recorded_by': recording_lecturer,
+                    'booklet_serial_number': booklet_number,
+                    'is_present': is_present,
+                    'remarks': remarks
+                }
+            )
+
+        # -------------------------------------------------------------
+        # 10. MALPRACTICE CASE & EVIDENCE ATTACHMENTS
+        # -------------------------------------------------------------
+        suspect_student = students[3] # std004 (Mary Wanjiku)
+        case_number = "MAL-2026-00001"
+
+        malpractice_case, created = MalpracticeCase.objects.get_or_create(
+            case_number=case_number,
+            defaults={
+                'examination': primary_exam,
+                'student': suspect_student,
+                'room': allocated_room,
+                'reported_by': recording_lecturer,
+                'incident_type': 'Unauthorized Material',
+                'description': (
+                    'Student was found in possession of unauthorized handwritten formula sheets '
+                    'concealed inside a scientific calculator case during the CSC401 examination.'
+                ),
+                'severity': 'HIGH',
+                'status': 'UNDER_INVESTIGATION'
+            }
+        )
+
+        if created or not malpractice_case.evidence_files.exists():
+            # Evidence Attachment 1: Confiscated Cheat Sheet
+            evidence_1_content = ContentFile(
+                b"IMAGE_DATA_SAMPLE: Confiscated handwritten formula sheets for CSC401 examination.",
+                name="confiscated_formula_notes.txt"
+            )
+            MalpracticeEvidence.objects.create(
+                case=malpractice_case,
+                file=evidence_1_content,
+                description="Photograph / transcript of confiscated formula notes concealed in calculator cover"
+            )
+
+            # Evidence Attachment 2: Invigilator Incident Report
+            evidence_2_content = ContentFile(
+                b"REPORT_DATA_SAMPLE: Formal written statement from Chief Invigilator detailing time and nature of incident.",
+                name="invigilator_statement.txt"
+            )
+            MalpracticeEvidence.objects.create(
+                case=malpractice_case,
+                file=evidence_2_content,
+                description="Signed Chief Invigilator statement and incident log entry"
+            )
+
+        self.stdout.write(self.style.SUCCESS("Successfully seeded database with full suite of test data!"))
+        self.stdout.write(self.style.SUCCESS(f"- Exam Period: {period.name} (ID: {period.id})"))
+        self.stdout.write(self.style.SUCCESS(f"- Test Lecturers: lec001 to lec003 (Password: Password123!)"))
+        self.stdout.write(self.style.SUCCESS(f"- Test Students: std001 to std005 (Password: Password123!)"))
+        self.stdout.write(self.style.SUCCESS(f"- Invigilator Duties: Assigned for all {len(examinations)} examinations."))
+        self.stdout.write(self.style.SUCCESS(f"- Exam Attendance: {len(students)} booklet serial records created for {primary_exam.unit.code}."))
+        self.stdout.write(self.style.SUCCESS(f"- Malpractice Case: Created Case #{case_number} with 2 evidence attachments."))

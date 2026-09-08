@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-s8+_b_qs-$ck1+g#_f)5kfjyu)biqhf#m5yp^86w)2opvhda$l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -70,7 +70,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -81,6 +81,8 @@ TEMPLATES = [
         },
     },
 ]
+
+LOGIN_URL = '/invigilator/login/'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 

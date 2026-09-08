@@ -1,0 +1,572 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ examination.unit.code }} - Session Roster & Check-In{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+    <!-- Top Navigation & Breadcrumb -->
+    <div class="col-12">
+        <div class="d-flex align-items-center justify-content-between">
+            <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
+                <i class="bi bi-arrow-left"></i>
+                <span>Back to Duties</span>
+            </a>
+
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="window.print()">
+                    <i class="bi bi-printer"></i>
+                    <span class="d-none d-sm-inline">Print Roster</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Details Header Card -->
+    <div class="col-12">
+        <div class="card card-custom bg-white p-3 p-md-4">
+            <div class="row g-3 align-items-center">
+                
+                <div class="col-12 col-md-7">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary text-white font-monospace px-2.5 py-1.5 fs-6">
+                            {{ examination.unit.code }}
+                        </span>
+                        <span class="badge bg-dark bg-opacity-75 text-white font-monospace">
+                            <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ room.name }} ({{ room.building.name }})
+                        </span>
+                        {% if duty.role == 'CHIEF_INVIGILATOR' %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle">
+                            <i class="bi bi-star-fill text-warning me-1"></i>Chief Invigilator
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <h4 class="fw-bold text-dark mb-1">{{ examination.unit.name }}</h4>
+                    <div class="text-muted small">
+                        <span>{{ examination.unit.course.name }}</span> &bull; 
+                        <span>{{ examination.period.name }}</span>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-5">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small"><i class="bi bi-calendar-check text-primary me-1"></i>Exam Date:</span>
+                            <span class="fw-semibold text-dark small">
+                                {% if schedule %}{{ schedule.exam_date|date:"l, d M Y" }}{% else %}Date TBD{% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <span class="text-muted small"><i class="bi bi-clock-history text-info me-1"></i>Session Time:</span>
+                            <span class="fw-semibold text-dark small">
+                                {% if schedule %}{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}{% else %}Time TBD{% endif %}
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="text-muted small"><i class="bi bi-people text-secondary me-1"></i>Room Capacity:</span>
+                            <span class="fw-semibold text-dark small">{{ total_allocated }} / {{ room.capacity }} Seats Allocated</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Attendance Progress & Metric Counters -->
+    <div class="col-12">
+        <div class="card card-custom bg-white p-3">
+            
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-2">
+                <span class="fw-bold text-dark small text-uppercase letter-spacing-1">
+                    <i class="bi bi-activity text-success me-1"></i> Live Check-In Progress
+                </span>
+                <span class="fw-bold text-primary small font-monospace" id="progressPercentText">
+                    {{ checkin_percent }}% Checked In ({{ checked_in_count }}/{{ total_allocated }})
+                </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress mb-3" style="height: 10px; border-radius: 6px;">
+                <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" id="checkinProgressBar" role="progressbar" style="width: {{ checkin_percent }}%;" aria-valuenow="{{ checkin_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+
+            <!-- Metric Badges Row -->
+            <div class="row g-2 text-center small">
+                <div class="col-3">
+                    <div class="p-2 rounded bg-light border filter-pill active" onclick="filterRoster('all', this)" style="cursor: pointer;">
+                        <div class="text-muted" style="font-size: 0.75rem;">Total</div>
+                        <div class="fw-bold fs-6 text-dark" id="statTotal">{{ total_allocated }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded badge-soft-success border filter-pill" onclick="filterRoster('CHECKED_IN', this)" style="cursor: pointer;">
+                        <div style="font-size: 0.75rem;">Checked In</div>
+                        <div class="fw-bold fs-6 text-success" id="statCheckedIn">{{ checked_in_count }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded badge-soft-danger border filter-pill" onclick="filterRoster('ABSENT', this)" style="cursor: pointer;">
+                        <div style="font-size: 0.75rem;">Absent</div>
+                        <div class="fw-bold fs-6 text-danger" id="statAbsent">{{ absent_count }}</div>
+                    </div>
+                </div>
+                <div class="col-3">
+                    <div class="p-2 rounded badge-soft-warning border filter-pill" onclick="filterRoster('PENDING', this)" style="cursor: pointer;">
+                        <div style="font-size: 0.75rem;">Pending</div>
+                        <div class="fw-bold fs-6 text-warning" id="statPending">{{ pending_count }}</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Student Roster Table & Search Controls -->
+    <div class="col-12">
+        <div class="card card-custom bg-white">
+            
+            <!-- Card Header: Search Box -->
+            <div class="p-3 border-bottom bg-light d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+                <div class="fw-bold text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-person-lines-fill text-primary"></i>
+                    <span>Student Session Roster</span>
+                </div>
+
+                <div class="position-relative" style="min-width: 260px;">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input type="text" id="rosterSearchInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Search Reg No, Name, Booklet #..." onkeyup="searchRoster()">
+                </div>
+            </div>
+
+            <!-- Roster Table (Desktop & Tablet) -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle mb-0" id="rosterTable">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th style="width: 50px;" class="text-center">#</th>
+                            <th>Registration Number</th>
+                            <th>Student Name</th>
+                            <th>Seat #</th>
+                            <th>Physical Booklet Serial #</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-end pe-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rosterTableBody">
+                        {% for item in roster_items %}
+                        <tr class="roster-row" id="row-{{ item.student.id }}" 
+                            data-student-id="{{ item.student.id }}"
+                            data-reg-no="{{ item.student.registration_number|lower }}"
+                            data-name="{{ item.student.user.get_full_name|lower }}"
+                            data-booklet="{{ item.attendance.booklet_serial_number|default:''|lower }}"
+                            data-status="{{ item.status }}">
+                            
+                            <td class="text-center text-muted small font-monospace">{{ forloop.counter }}</td>
+                            
+                            <td>
+                                <span class="fw-bold text-dark font-monospace">{{ item.student.registration_number }}</span>
+                            </td>
+
+                            <td>
+                                <div class="fw-semibold text-dark">{{ item.student.user.get_full_name|default:item.student.user.username }}</div>
+                                <div class="text-muted" style="font-size: 0.75rem;">{{ item.student.course.code }}</div>
+                            </td>
+
+                            <td>
+                                <span class="badge bg-light text-dark border font-monospace">{{ item.seat_number|default:"Pending" }}</span>
+                            </td>
+
+                            <td>
+                                {% if item.attendance and item.attendance.is_present %}
+                                    <span class="badge bg-dark font-monospace text-warning px-2 py-1 booklet-badge">
+                                        <i class="bi bi-upc-scan me-1"></i>{{ item.attendance.booklet_serial_number }}
+                                    </span>
+                                {% elif item.attendance and not item.attendance.is_present %}
+                                    <span class="text-muted small fst-italic">N/A (Marked Absent)</span>
+                                {% else %}
+                                    <span class="text-muted small fst-italic">Not Issued</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-center status-cell">
+                                {% if item.status == 'CHECKED_IN' %}
+                                    <span class="badge badge-soft-success px-2.5 py-1.5"><i class="bi bi-check-circle-fill me-1"></i>Checked In</span>
+                                {% elif item.status == 'ABSENT' %}
+                                    <span class="badge badge-soft-danger px-2.5 py-1.5"><i class="bi bi-x-circle-fill me-1"></i>Absent</span>
+                                {% else %}
+                                    <span class="badge badge-soft-warning px-2.5 py-1.5"><i class="bi bi-clock-fill me-1"></i>Pending</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="text-end pe-3">
+                                <button type="button" class="btn btn-sm btn-primary-custom d-inline-flex align-items-center gap-1 px-3 py-1"
+                                    onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
+                                    <i class="bi bi-input-cursor-text"></i>
+                                    <span>{% if item.status == 'CHECKED_IN' %}Edit Booklet{% else %}Check In{% endif %}</span>
+                                </button>
+                            </td>
+
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">No students allocated to this examination room session.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Roster Card List (Screens < 768px) -->
+            <div class="d-md-none p-2" id="mobileRosterList">
+                {% for item in roster_items %}
+                <div class="card card-custom mb-2 p-3 roster-row-mobile" id="mobile-row-{{ item.student.id }}"
+                    data-student-id="{{ item.student.id }}"
+                    data-reg-no="{{ item.student.registration_number|lower }}"
+                    data-name="{{ item.student.user.get_full_name|lower }}"
+                    data-booklet="{{ item.attendance.booklet_serial_number|default:''|lower }}"
+                    data-status="{{ item.status }}">
+                    
+                    <div class="d-flex align-items-start justify-content-between mb-2">
+                        <div>
+                            <div class="fw-bold font-monospace text-primary fs-6">{{ item.student.registration_number }}</div>
+                            <div class="fw-semibold text-dark">{{ item.student.user.get_full_name|default:item.student.user.username }}</div>
+                        </div>
+
+                        <div class="status-cell-mobile">
+                            {% if item.status == 'CHECKED_IN' %}
+                                <span class="badge badge-soft-success"><i class="bi bi-check-circle-fill me-1"></i>Checked In</span>
+                            {% elif item.status == 'ABSENT' %}
+                                <span class="badge badge-soft-danger"><i class="bi bi-x-circle-fill me-1"></i>Absent</span>
+                            {% else %}
+                                <span class="badge badge-soft-warning"><i class="bi bi-clock-fill me-1"></i>Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between small bg-light p-2 rounded mb-2">
+                        <span class="text-muted"><i class="bi bi-geo me-1"></i>Seat: <strong>{{ item.seat_number|default:"Pending" }}</strong></span>
+                        <span class="booklet-badge-mobile">
+                            {% if item.attendance and item.attendance.is_present %}
+                                <span class="badge bg-dark font-monospace text-warning px-2 py-1"><i class="bi bi-upc-scan me-1"></i>{{ item.attendance.booklet_serial_number }}</span>
+                            {% else %}
+                                <span class="text-muted fst-italic">No booklet issued</span>
+                            {% endif %}
+                        </span>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-primary-custom w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                        onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
+                        <i class="bi bi-input-cursor-text"></i>
+                        <span>{% if item.status == 'CHECKED_IN' %}Edit Booklet Serial{% else %}Check In Student{% endif %}</span>
+                    </button>
+
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Check-In & Physical Booklet Serial Number Modal -->
+<div class="modal fade" id="checkInModal" tabindex="-1" aria-labelledby="checkInModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content card-custom border-0">
+            <div class="modal-header bg-dark text-white py-3">
+                <h5 class="modal-title d-flex align-items-center gap-2" id="checkInModalLabel">
+                    <i class="bi bi-shield-check text-success"></i>
+                    <span>Student Check-In & Booklet Capture</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="checkInForm" onsubmit="submitCheckIn(event)">
+                {% csrf_token %}
+                <input type="hidden" id="modalStudentId" name="student_id">
+                
+                <div class="modal-body p-4">
+
+                    <!-- Student Summary Box -->
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="text-muted small" style="font-size: 0.75rem;">CANDIDATE INFORMATION</div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="fw-bold fs-5 text-primary font-monospace" id="modalRegNo">CT101/0001/26</span>
+                            <span class="badge bg-secondary" id="modalCurrentStatus">PENDING</span>
+                        </div>
+                        <div class="fw-semibold text-dark mt-1" id="modalStudentName">John Doe</div>
+                    </div>
+
+                    <!-- Presence Toggle -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Attendance Status</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="is_present" id="statusPresent" value="true" checked onchange="togglePresenceState(true)">
+                                <label class="form-check-label fw-semibold text-success" for="statusPresent">
+                                    <i class="bi bi-check-circle me-1"></i>Present in Hall
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="is_present" id="statusAbsent" value="false" onchange="togglePresenceState(false)">
+                                <label class="form-check-label fw-semibold text-danger" for="statusAbsent">
+                                    <i class="bi bi-x-circle me-1"></i>Absent
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booklet Serial Number Input -->
+                    <div class="mb-3" id="bookletFieldGroup">
+                        <label for="modalBookletSerial" class="form-label fw-semibold small text-dark d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-upc-scan text-primary me-1"></i>Physical Booklet Serial Number <span class="text-danger">*</span></span>
+                            <span class="badge bg-info bg-opacity-10 text-primary" style="font-size: 0.7rem;">Pre-Printed Barcode</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-journal-code"></i></span>
+                            <input type="text" class="form-control form-control-lg font-monospace fw-bold" id="modalBookletSerial" name="booklet_serial_number" placeholder="e.g. BKT-2026-CSC401-0001" autocomplete="off">
+                        </div>
+                        <div class="form-text small">Scan or enter the exact unique serial number printed on the issued exam booklet.</div>
+                    </div>
+
+                    <!-- Remarks / Notes -->
+                    <div class="mb-2">
+                        <label for="modalRemarks" class="form-label fw-semibold small text-muted">Invigilator Notes / Remarks (Optional)</label>
+                        <textarea class="form-control form-control-sm" id="modalRemarks" name="remarks" rows="2" placeholder="e.g. Candidate ID verified, signed seat register..."></textarea>
+                    </div>
+
+                    <!-- Error Alert Box -->
+                    <div class="alert alert-danger d-none py-2 small" id="modalErrorAlert"></div>
+
+                </div>
+
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary-custom btn-sm px-4 d-flex align-items-center gap-2" id="modalSubmitBtn">
+                        <i class="bi bi-check-lg"></i>
+                        <span>Save & Update Check-In</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let activeFilter = 'all';
+    let checkInModalInstance = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        checkInModalInstance = new bootstrap.Modal(document.getElementById('checkInModal'));
+    });
+
+    function openCheckInModal(studentId, regNo, name, bookletSerial, status, remarks) {
+        document.getElementById('modalStudentId').value = studentId;
+        document.getElementById('modalRegNo').innerText = regNo;
+        document.getElementById('modalStudentName').innerText = name;
+        document.getElementById('modalCurrentStatus').innerText = status;
+        document.getElementById('modalRemarks').value = remarks || '';
+        document.getElementById('modalErrorAlert').classList.add('d-none');
+
+        const isAbsent = (status === 'ABSENT');
+        if (isAbsent) {
+            document.getElementById('statusAbsent').checked = true;
+            togglePresenceState(false);
+            document.getElementById('modalBookletSerial').value = '';
+        } else {
+            document.getElementById('statusPresent').checked = true;
+            togglePresenceState(true);
+            // If bookletSerial is absent placeholder, leave blank for manual input
+            if (bookletSerial && !bookletSerial.startsWith('ABSENT-')) {
+                document.getElementById('modalBookletSerial').value = bookletSerial;
+            } else {
+                document.getElementById('modalBookletSerial').value = '';
+            }
+        }
+
+        checkInModalInstance.show();
+        setTimeout(() => {
+            if (!isAbsent) {
+                document.getElementById('modalBookletSerial').focus();
+            }
+        }, 400);
+    }
+
+    function togglePresenceState(isPresent) {
+        const bookletGroup = document.getElementById('bookletFieldGroup');
+        const bookletInput = document.getElementById('modalBookletSerial');
+        if (isPresent) {
+            bookletGroup.style.display = 'block';
+            bookletInput.required = true;
+        } else {
+            bookletGroup.style.display = 'none';
+            bookletInput.required = false;
+        }
+    }
+
+    async function submitCheckIn(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('modalSubmitBtn');
+        const errorAlert = document.getElementById('modalErrorAlert');
+        errorAlert.classList.add('d-none');
+
+        const studentId = document.getElementById('modalStudentId').value;
+        const isPresent = document.getElementById('statusPresent').checked;
+        const bookletSerial = document.getElementById('modalBookletSerial').value.trim();
+        const remarks = document.getElementById('modalRemarks').value.trim();
+
+        if (isPresent && !bookletSerial) {
+            errorAlert.innerText = 'Please scan or enter the physical booklet serial number.';
+            errorAlert.classList.remove('d-none');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Saving...';
+
+        const payload = {
+            student_id: studentId,
+            is_present: isPresent,
+            booklet_serial_number: bookletSerial,
+            remarks: remarks
+        };
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        try {
+            const response = await fetch("{% url 'student_checkin' duty_id=duty.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                // Update Desktop Row
+                const row = document.getElementById(`row-${studentId}`);
+                if (row) {
+                    row.dataset.status = result.status;
+                    row.dataset.booklet = (result.booklet_serial_number || '').toLowerCase();
+                    
+                    // Update Booklet Cell
+                    const bookletCell = row.querySelector('.booklet-badge');
+                    if (result.is_present) {
+                        row.cells[4].innerHTML = `<span class="badge bg-dark font-monospace text-warning px-2 py-1 booklet-badge"><i class="bi bi-upc-scan me-1"></i>${result.booklet_serial_number}</span>`;
+                    } else {
+                        row.cells[4].innerHTML = `<span class="text-muted small fst-italic">N/A (Marked Absent)</span>`;
+                    }
+
+                    // Update Status Cell
+                    const statusCell = row.querySelector('.status-cell');
+                    if (result.status === 'CHECKED_IN') {
+                        statusCell.innerHTML = `<span class="badge badge-soft-success px-2.5 py-1.5"><i class="bi bi-check-circle-fill me-1"></i>Checked In</span>`;
+                    } else if (result.status === 'ABSENT') {
+                        statusCell.innerHTML = `<span class="badge badge-soft-danger px-2.5 py-1.5"><i class="bi bi-x-circle-fill me-1"></i>Absent</span>`;
+                    } else {
+                        statusCell.innerHTML = `<span class="badge badge-soft-warning px-2.5 py-1.5"><i class="bi bi-clock-fill me-1"></i>Pending</span>`;
+                    }
+
+                    // Update Action button text
+                    const actionBtn = row.querySelector('button');
+                    if (actionBtn) {
+                        actionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit Booklet' : 'Check In'}</span>`;
+                        actionBtn.setAttribute('onclick', `openCheckInModal('${studentId}', '${result.registration_number}', '${result.student_name}', '${result.booklet_serial_number}', '${result.status}', '${result.remarks}')`);
+                    }
+                }
+
+                // Update Mobile Card
+                const mobileCard = document.getElementById(`mobile-row-${studentId}`);
+                if (mobileCard) {
+                    mobileCard.dataset.status = result.status;
+                    mobileCard.dataset.booklet = (result.booklet_serial_number || '').toLowerCase();
+
+                    const mobileStatus = mobileCard.querySelector('.status-cell-mobile');
+                    if (result.status === 'CHECKED_IN') {
+                        mobileStatus.innerHTML = `<span class="badge badge-soft-success"><i class="bi bi-check-circle-fill me-1"></i>Checked In</span>`;
+                    } else if (result.status === 'ABSENT') {
+                        mobileStatus.innerHTML = `<span class="badge badge-soft-danger"><i class="bi bi-x-circle-fill me-1"></i>Absent</span>`;
+                    } else {
+                        mobileStatus.innerHTML = `<span class="badge badge-soft-warning"><i class="bi bi-clock-fill me-1"></i>Pending</span>`;
+                    }
+
+                    const mobileBooklet = mobileCard.querySelector('.booklet-badge-mobile');
+                    if (result.is_present) {
+                        mobileBooklet.innerHTML = `<span class="badge bg-dark font-monospace text-warning px-2 py-1"><i class="bi bi-upc-scan me-1"></i>${result.booklet_serial_number}</span>`;
+                    } else {
+                        mobileBooklet.innerHTML = `<span class="text-muted fst-italic">No booklet issued</span>`;
+                    }
+
+                    const mobileActionBtn = mobileCard.querySelector('button');
+                    if (mobileActionBtn) {
+                        mobileActionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit Booklet Serial' : 'Check In Student'}</span>`;
+                        mobileActionBtn.setAttribute('onclick', `openCheckInModal('${studentId}', '${result.registration_number}', '${result.student_name}', '${result.booklet_serial_number}', '${result.status}', '${result.remarks}')`);
+                    }
+                }
+
+                // Update Stats and Progress Bar
+                if (result.stats) {
+                    document.getElementById('statTotal').innerText = result.stats.total;
+                    document.getElementById('statCheckedIn').innerText = result.stats.checked_in;
+                    document.getElementById('statAbsent').innerText = result.stats.absent;
+                    document.getElementById('statPending').innerText = result.stats.pending;
+                    
+                    const pBar = document.getElementById('checkinProgressBar');
+                    pBar.style.width = `${result.stats.percent}%`;
+                    pBar.setAttribute('aria-valuenow', result.stats.percent);
+                    document.getElementById('progressPercentText').innerText = `${result.stats.percent}% Checked In (${result.stats.checked_in}/${result.stats.total})`;
+                }
+
+                checkInModalInstance.hide();
+            } else {
+                errorAlert.innerText = result.message || 'An error occurred during check-in.';
+                errorAlert.classList.remove('d-none');
+            }
+        } catch (err) {
+            errorAlert.innerText = `Network or Server Error: ${err.message}`;
+            errorAlert.classList.remove('d-none');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> <span>Save & Update Check-In</span>';
+        }
+    }
+
+    function searchRoster() {
+        const query = document.getElementById('rosterSearchInput').value.trim().toLowerCase();
+        const rows = document.querySelectorAll('.roster-row');
+        const mobileRows = document.querySelectorAll('.roster-row-mobile');
+
+        const filterFn = (el) => {
+            const matchesQuery = !query || 
+                el.dataset.regNo.includes(query) || 
+                el.dataset.name.includes(query) || 
+                el.dataset.booklet.includes(query);
+
+            const matchesStatus = (activeFilter === 'all') || (el.dataset.status === activeFilter);
+            
+            if (matchesQuery && matchesStatus) {
+                el.style.display = '';
+            } else {
+                el.style.display = 'none';
+            }
+        };
+
+        rows.forEach(filterFn);
+        mobileRows.forEach(filterFn);
+    }
+
+    function filterRoster(status, pillEl) {
+        activeFilter = status;
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active', 'border-primary', 'shadow-sm'));
+        pillEl.classList.add('active', 'border-primary', 'shadow-sm');
+        searchRoster();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,1 @@
+IMAGE_DATA_SAMPLE: Confiscated handwritten formula sheets for CSC401 examination.

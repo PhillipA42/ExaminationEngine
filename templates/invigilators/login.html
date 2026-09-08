@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Invigilator Sign In{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center my-4 my-md-5">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+        
+        <!-- Header / Logo -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle p-3 mb-3 shadow-sm">
+                <i class="bi bi-person-badge-fill fs-1"></i>
+            </div>
+            <h3 class="fw-bold text-dark mb-1">Invigilator Portal</h3>
+            <p class="text-muted small">Sign in with your lecturer credentials to access assigned exam sessions and record attendance.</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="card card-custom p-4 bg-white mb-4">
+            <form method="POST" action="{% url 'invigilator_login' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold small text-muted">Lecturer Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control border-start-0" id="username" name="username" placeholder="e.g. lec001" required autofocus autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label fw-semibold small text-muted">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control border-start-0" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary-custom w-100 py-2.5 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Sign In to Portal</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Demo / Quick Access Helper Card -->
+        <div class="card card-custom p-3 bg-light border-dashed">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="fw-semibold text-secondary small"><i class="bi bi-key-fill text-warning me-1"></i> Test Lecturer Credentials</span>
+                <span class="badge bg-secondary">Demo Mode</span>
+            </div>
+            <div class="d-grid gap-1 small">
+                <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('lec001', 'Password123!')">
+                    <i class="bi bi-person-fill"></i> <strong>lec001</strong> (Dr. Alan Turing - Chief Invigilator)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('lec002', 'Password123!')">
+                    <i class="bi bi-person-fill"></i> <strong>lec002</strong> (Prof. Grace Hopper - Invigilator)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('lec003', 'Password123!')">
+                    <i class="bi bi-person-fill"></i> <strong>lec003</strong> (Dr. Donald Knuth - Invigilator)
+                </button>
+            </div>
+            <div class="text-muted text-center mt-2" style="font-size: 0.75rem;">
+                Default Password: <code class="text-dark">Password123!</code> (Click an account above to auto-fill)
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function fillCreds(u, p) {
+        document.getElementById('username').value = u;
+        document.getElementById('password').value = p;
+    }
+</script>
+{% endblock %}

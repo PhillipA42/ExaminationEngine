@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Examination Pass - {{ student.registration_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Screen Styling */
+    .exam-pass-paper {
+        background-color: #ffffff;
+        border: 2px solid #0f172a;
+        border-radius: 8px;
+        padding: 2.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        max-width: 960px;
+        margin: 0 auto;
+    }
+
+    .pass-header-border {
+        border-bottom: 3px double #0f172a;
+        padding-bottom: 1rem;
+    }
+
+    .security-badge {
+        border: 1px dashed #64748b;
+        background: #f8fafc;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+    }
+
+    /* Print Specific Rules */
+    @media print {
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            font-size: 11pt;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar, footer, .btn-print-controls, .alert {
+            display: none !important;
+        }
+
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .exam-pass-paper {
+            border: 2px solid #000000 !important;
+            box-shadow: none !important;
+            padding: 1.5rem !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            page-break-after: avoid;
+        }
+
+        .table {
+            border-color: #000000 !important;
+        }
+
+        .table th, .table td {
+            border-color: #000000 !important;
+            color: #000000 !important;
+            padding: 0.35rem 0.5rem !important;
+        }
+
+        .badge {
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: transparent !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-2">
+
+    <!-- Screen Control Buttons (Hidden on Print) -->
+    <div class="d-flex align-items-center justify-content-between mb-4 btn-print-controls">
+        <a href="{% url 'student_timetable' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1">
+            <i class="bi bi-arrow-left"></i>
+            <span>Back to Timetable</span>
+        </a>
+
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-primary-custom d-flex align-items-center gap-2 px-4 shadow-sm" onclick="window.print()">
+                <i class="bi bi-printer-fill fs-5"></i>
+                <span class="fw-bold">Print / Save Pass (PDF)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable Examination Pass Paper Document -->
+    <div class="exam-pass-paper" id="printablePass">
+        
+        <!-- Document Header -->
+        <div class="row align-items-center pass-header-border mb-3">
+            <div class="col-3 text-center">
+                <div class="d-inline-flex align-items-center justify-content-center border border-2 border-dark rounded p-2" style="width: 80px; height: 80px;">
+                    <i class="bi bi-shield-shaded fs-1 text-dark"></i>
+                </div>
+            </div>
+
+            <div class="col-6 text-center">
+                <h4 class="fw-bold text-uppercase mb-0 letter-spacing-1 text-dark">University Examination Engine</h4>
+                <div class="fw-bold text-secondary small text-uppercase">Directorate of Examinations & Timetabling</div>
+                <h5 class="fw-extrabold text-uppercase text-primary mt-2 mb-0" style="letter-spacing: 0.05em;">Official Examination Pass</h5>
+                <div class="small text-muted font-monospace">{{ active_period.name|default:"2026/2027 Main Examinations" }}</div>
+            </div>
+
+            <div class="col-3 text-end">
+                <div class="security-badge text-center small font-monospace">
+                    <div style="font-size: 0.65rem;" class="text-uppercase text-muted">PASS AUTH REF</div>
+                    <strong class="text-dark">{{ verification_code }}</strong>
+                    <div class="text-muted" style="font-size: 0.65rem;">Issued: {{ generation_date|date:"d-M-Y" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Candidate Information Grid -->
+        <div class="row g-2 mb-4 p-3 bg-light rounded border border-dark-subtle small">
+            
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">CANDIDATE FULL NAME</div>
+                <div class="fw-bold text-dark fs-6">{{ student.user.get_full_name|default:student.user.username }}</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">REGISTRATION NUMBER</div>
+                <div class="fw-bold text-primary font-monospace fs-6">{{ student.registration_number }}</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">DEGREE PROGRAMME</div>
+                <div class="fw-bold text-dark">{{ student.course.name }} ({{ student.course.code }})</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">DEPARTMENT</div>
+                <div class="fw-semibold text-dark">{{ student.department.name }}</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">FACULTY / SCHOOL</div>
+                <div class="fw-semibold text-dark">{{ student.school.name }}</div>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-4">
+                <div class="text-muted" style="font-size: 0.75rem;">YEAR OF STUDY / STATUS</div>
+                <div class="fw-semibold text-dark">Year {{ student.year_of_study }} &bull; <span class="badge bg-success">ELIGIBLE</span></div>
+            </div>
+
+        </div>
+
+        <!-- Registered Unit Schedule Table -->
+        <div class="mb-4">
+            <h6 class="fw-bold text-dark text-uppercase small mb-2 d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-calendar4-event me-1"></i> Authorized Examination Schedule & Hall Allocations</span>
+                <span class="text-muted font-monospace" style="font-size: 0.75rem;">Total Units: {{ allocations|length }}</span>
+            </h6>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle text-dark" style="font-size: 0.85rem;">
+                    <thead class="table-dark text-uppercase text-center" style="font-size: 0.75rem;">
+                        <tr>
+                            <th style="width: 35px;">#</th>
+                            <th style="width: 90px;">Unit Code</th>
+                            <th>Unit Name</th>
+                            <th style="width: 100px;">Date</th>
+                            <th style="width: 95px;">Time</th>
+                            <th style="width: 130px;">Venue / Room</th>
+                            <th style="width: 75px;">Seat #</th>
+                            <th style="width: 110px;">Invigilator Sign</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alloc in allocations %}
+                        <tr>
+                            <td class="text-center font-monospace">{{ forloop.counter }}</td>
+                            <td class="fw-bold font-monospace text-center">{{ alloc.examination.unit.code }}</td>
+                            <td class="fw-medium">{{ alloc.examination.unit.name }}</td>
+                            <td class="text-center">
+                                {% if alloc.examination.schedule %}
+                                    {{ alloc.examination.schedule.exam_date|date:"d/m/Y" }}
+                                {% else %}
+                                    TBD
+                                {% endif %}
+                            </td>
+                            <td class="text-center font-monospace" style="font-size: 0.8rem;">
+                                {% if alloc.examination.schedule %}
+                                    {{ alloc.examination.schedule.start_time|time:"H:i" }}-{{ alloc.examination.schedule.end_time|time:"H:i" }}
+                                {% else %}
+                                    TBD
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold">{{ alloc.room.name }}</span>
+                                <div class="text-muted" style="font-size: 0.7rem;">{{ alloc.room.building.code }}</div>
+                            </td>
+                            <td class="text-center font-monospace">{{ alloc.seat_number|default:"On-Site" }}</td>
+                            <td class="text-center text-muted" style="height: 38px;">
+                                <!-- Space for invigilator initial on exam day -->
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-3 text-muted">No scheduled examinations found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Examination Rules & Instructions for Candidates -->
+        <div class="p-3 border rounded mb-4 small bg-light" style="font-size: 0.75rem; line-height: 1.4;">
+            <div class="fw-bold text-uppercase text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Examination Regulations & Candidate Instructions</div>
+            <ol class="mb-0 ps-3">
+                <li>Candidates <strong>MUST</strong> present this printed Examination Pass together with a valid Student Identity Card to enter the examination room.</li>
+                <li>Candidates must be seated at least <strong>15 minutes</strong> before the scheduled examination start time.</li>
+                <li><strong>STRICTLY PROHIBITED:</strong> Mobile phones, smart watches, programmable calculators, unauthorized notes, or electronic storage devices. Possession of unauthorized materials constitutes academic malpractice and results in disciplinary sanction.</li>
+                <li>Candidates must ensure their physical booklet serial number is correctly captured by the Chief Invigilator upon issuing.</li>
+            </ol>
+        </div>
+
+        <!-- Signatures & Official Endorsement -->
+        <div class="row pt-3 text-center small text-dark mt-4 border-top">
+            <div class="col-4">
+                <div class="border-bottom border-dark pb-3 mb-1" style="height: 40px;"></div>
+                <div class="fw-bold">Candidate Signature</div>
+                <div class="text-muted" style="font-size: 0.7rem;">Date: ____________________</div>
+            </div>
+
+            <div class="col-4">
+                <div class="d-inline-flex align-items-center justify-content-center p-2 border border-secondary rounded font-monospace" style="font-size: 0.75rem;">
+                    <i class="bi bi-qr-code fs-3 me-2"></i>
+                    <div class="text-start">
+                        <div>OFFICIAL STAMP</div>
+                        <div class="text-success fw-bold">AUTHENTICATED</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-4">
+                <div class="border-bottom border-dark pb-3 mb-1" style="height: 40px;">
+                    <span class="font-monospace text-primary fw-bold" style="font-size: 0.85rem;">[DIGITALLY ENDORSED]</span>
+                </div>
+                <div class="fw-bold">Director of Examinations</div>
+                <div class="text-muted" style="font-size: 0.7rem;">University Examination Board</div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
