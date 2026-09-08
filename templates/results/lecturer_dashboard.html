@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Lecturer Results Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="bi bi-file-earmark-spreadsheet-fill text-primary me-2"></i>Examination Results Management
+        </h3>
+        <p class="text-muted mb-0">
+            Enter marks, perform bulk CSV/Excel uploads, verify reconciliation, and submit for departmental review.
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+        <span class="badge bg-light text-dark border p-2">
+            <i class="bi bi-building me-1 text-primary"></i>Dept: <strong>{{ lecturer.department.name }}</strong>
+        </span>
+    </div>
+</div>
+
+<!-- Assigned Units & Examinations Cards -->
+<div class="row g-4">
+    {% for item in exam_cards %}
+    <div class="col-lg-6">
+        <div class="card card-custom h-100 shadow-sm border-0">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-primary me-2 font-monospace">{{ item.examination.unit.code }}</span>
+                    <strong class="text-dark">{{ item.examination.unit.name }}</strong>
+                </div>
+                <div>
+                    {% if item.status == 'DRAFT' %}
+                        <span class="badge badge-soft-warning"><i class="bi bi-pencil-square me-1"></i>Draft</span>
+                    {% elif item.status == 'SUBMITTED' %}
+                        <span class="badge badge-soft-primary"><i class="bi bi-send me-1"></i>Submitted to COD</span>
+                    {% elif item.status == 'COD_APPROVED' %}
+                        <span class="badge badge-soft-info"><i class="bi bi-check2-circle me-1"></i>COD Approved</span>
+                    {% elif item.status == 'DEAN_APPROVED' %}
+                        <span class="badge badge-soft-primary"><i class="bi bi-award me-1"></i>Dean Approved</span>
+                    {% elif item.status == 'PUBLISHED' %}
+                        <span class="badge badge-soft-success"><i class="bi bi-check-all me-1"></i>Published</span>
+                    {% elif 'REJECTED' in item.status %}
+                        <span class="badge badge-soft-danger"><i class="bi bi-exclamation-octagon me-1"></i>{{ item.status_display }}</span>
+                    {% else %}
+                        <span class="badge badge-soft-secondary"><i class="bi bi-circle me-1"></i>Not Started</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3 text-center">
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-light">
+                            <small class="text-muted d-block">Academic Year</small>
+                            <span class="fw-semibold">{{ item.examination.period.academic_year }}</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-light">
+                            <small class="text-muted d-block">Registered</small>
+                            <span class="fw-bold text-primary">{{ item.registered_count }} Students</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="p-2 border rounded bg-light">
+                            <small class="text-muted d-block">Marks Captured</small>
+                            <span class="fw-bold {% if item.marks_count == item.registered_count %}text-success{% else %}text-warning{% endif %}">
+                                {{ item.marks_count }}/{{ item.registered_count }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if item.submission and item.submission.rejection_reason %}
+                <div class="alert alert-danger py-2 px-3 small d-flex align-items-start gap-2 mb-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-6 mt-1 flex-shrink-0"></i>
+                    <div>
+                        <strong>Rejection Feedback:</strong> {{ item.submission.rejection_reason }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    Exam Type: <span class="fw-semibold">{{ item.examination.examination_type }}</span>
+                </small>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'lecturer_mark_entry' examination_id=item.examination.id %}" class="btn btn-sm btn-primary-custom d-flex align-items-center gap-1">
+                        <i class="bi bi-pencil-fill"></i> Enter Marks
+                    </a>
+                    <a href="{% url 'lecturer_bulk_upload' examination_id=item.examination.id %}" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1">
+                        <i class="bi bi-cloud-arrow-up-fill"></i> Bulk Upload
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card card-custom p-5 text-center text-muted">
+            <i class="bi bi-inbox fs-1 text-secondary mb-2"></i>
+            <h5 class="fw-bold">No Examinations Assigned</h5>
+            <p class="mb-0">You currently have no examinations assigned for results management.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Bulk Mark Upload - {{ examination.unit.code }}{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-8">
+        <a href="{% url 'lecturer_mark_entry' examination_id=examination.id %}" class="btn btn-sm btn-outline-secondary mb-2">
+            <i class="bi bi-arrow-left me-1"></i>Back to Mark Entry
+        </a>
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="bi bi-cloud-arrow-up-fill text-primary me-2"></i>Bulk Mark Upload
+        </h3>
+        <p class="text-muted small mb-0">
+            Unit: <strong>{{ examination.unit.code }} - {{ examination.unit.name }}</strong> &bull; {{ examination.period.academic_year }} Semester {{ examination.period.semester }}
+        </p>
+    </div>
+</div>
+
+{% if upload_errors %}
+<div class="card card-custom border-danger mb-4 shadow-sm">
+    <div class="card-header bg-danger text-white py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+        <strong class="fs-6">Upload Failed — {{ upload_errors|length }} Validation Errors Detected</strong>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning py-2 small mb-3">
+            <i class="bi bi-info-circle me-1"></i>
+            <strong>Transaction Safely Rolled Back:</strong> No records were saved to the database. Please correct the highlighted errors in your spreadsheet and upload again.
+        </div>
+        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+            <ul class="list-group list-group-flush">
+                {% for err in upload_errors %}
+                <li class="list-group-item list-group-item-danger py-2 small">
+                    <i class="bi bi-x-circle-fill text-danger me-2"></i>{{ err }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <!-- Upload Form Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-file-earmark-arrow-up text-primary me-2"></i>Select File to Upload
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="mark_file" class="form-label fw-semibold text-dark">Spreadsheet File (CSV or Excel)</label>
+                        <input class="form-control form-control-lg" type="file" id="mark_file" name="mark_file" accept=".csv, .xlsx, .xls" required>
+                        <div class="form-text text-muted">
+                            Supported formats: <strong>.csv</strong>, <strong>.xlsx</strong> (Max size: 5MB)
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary-custom btn-lg d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-cloud-upload-fill"></i> Validate & Import Marks
+                        </button>
+                        <a href="{% url 'download_sample_csv' examination_id=examination.id %}" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-download"></i> Download Pre-filled CSV Template
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions & Specifications Card -->
+    <div class="col-lg-6">
+        <div class="card card-custom shadow-sm border-0 h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-info-circle text-info me-2"></i>File Specifications & Rules
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="fw-bold text-dark">Expected CSV / Excel Columns:</h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-bordered table-sm small">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Header</th>
+                                <th>Required?</th>
+                                <th>Valid Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>registration_number</code></td>
+                                <td><span class="badge bg-danger">Required</span></td>
+                                <td>Must match official student registration number.</td>
+                            </tr>
+                            <tr>
+                                <td><code>cat_mark</code></td>
+                                <td><span class="badge bg-danger">Required</span></td>
+                                <td>Decimal between <strong>0.00</strong> and <strong>40.00</strong></td>
+                            </tr>
+                            <tr>
+                                <td><code>exam_mark</code></td>
+                                <td><span class="badge bg-danger">Required</span></td>
+                                <td>Decimal between <strong>0.00</strong> and <strong>70.00</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h6 class="fw-bold text-dark">Validation Rules:</h6>
+                <ul class="small text-muted ps-3 mb-0">
+                    <li>Students must be officially registered for <strong>{{ examination.unit.code }}</strong> in this semester.</li>
+                    <li>Duplicate rows for the same student will trigger validation failure.</li>
+                    <li>Total score (CAT + Exam) cannot exceed 100.00.</li>
+                    <li>Grade is automatically computed using institutional standards (A: &ge;70, B: 60-69, C: 50-59, D: 40-49, E: &lt;40).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

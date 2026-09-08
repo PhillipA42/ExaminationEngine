@@ -183,6 +183,11 @@
                     <span class="d-none d-sm-inline">Exam Pass</span>
                 </a>
 
+                <a href="{% url 'student_results' %}" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1">
+                    <i class="bi bi-award"></i>
+                    <span class="d-none d-sm-inline">My Results</span>
+                </a>
+
                 <a href="{% url 'student_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
                     <i class="bi bi-box-arrow-right"></i>
                     <span class="d-none d-sm-inline">Logout</span>
@@ -204,6 +209,23 @@
                     <span class="d-none d-sm-inline">Duties</span>
                 </a>
 
+                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                    <span class="d-none d-sm-inline">Marks Entry</span>
+                </a>
+
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-check2-square"></i>
+                        <span class="d-none d-sm-inline">Workflows</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item small" href="{% url 'cod_results_dashboard' %}"><i class="bi bi-building me-2 text-primary"></i>COD Review</a></li>
+                        <li><a class="dropdown-item small" href="{% url 'dean_results_dashboard' %}"><i class="bi bi-award me-2 text-info"></i>Dean Review</a></li>
+                        <li><a class="dropdown-item small" href="{% url 'officer_results_dashboard' %}"><i class="bi bi-shield-check me-2 text-success"></i>Exam Authority Publication</a></li>
+                    </ul>
+                </div>
+
                 <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
                     <i class="bi bi-box-arrow-right"></i>
                     <span class="d-none d-sm-inline">Logout</span>
@@ -215,8 +237,12 @@
                     <div class="fw-semibold text-white small">{{ user.username }}</div>
                     <span class="badge bg-info text-dark" style="font-size: 0.7rem;">Admin</span>
                 </div>
-                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light">Student View</a>
-                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light">Invigilator View</a>
+                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light">Student</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light">Invigilator</a>
+                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-light">Lecturer</a>
+                <a href="{% url 'cod_results_dashboard' %}" class="btn btn-sm btn-outline-light">COD</a>
+                <a href="{% url 'dean_results_dashboard' %}" class="btn btn-sm btn-outline-light">Dean</a>
+                <a href="{% url 'officer_results_dashboard' %}" class="btn btn-sm btn-outline-info">Officer</a>
                 <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger">Logout</a>
                 {% endif %}
 

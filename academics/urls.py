@@ -4,6 +4,15 @@ from .views import (
     SchoolViewSet, DepartmentViewSet, CourseViewSet,
     UnitViewSet, LecturerViewSet, StudentViewSet, UnitRegistrationViewSet
 )
+from .reconciliation_views import (
+    StudentMarkViewSet,
+    ReconciliationReportViewSet,
+    TriggerReconciliationAPIView
+)
+from .results_views import (
+    ResultSubmissionViewSet,
+    StudentPublishedResultsAPIView
+)
 
 router = DefaultRouter()
 router.register(r'schools', SchoolViewSet)
@@ -13,7 +22,12 @@ router.register(r'units', UnitViewSet)
 router.register(r'lecturers', LecturerViewSet)
 router.register(r'students', StudentViewSet)
 router.register(r'unit-registrations', UnitRegistrationViewSet)
+router.register(r'marks', StudentMarkViewSet, basename='student-marks')
+router.register(r'submissions', ResultSubmissionViewSet, basename='result-submissions')
+router.register(r'reconciliation-reports', ReconciliationReportViewSet, basename='reconciliation-reports')
 
 urlpatterns = [
+    path('reconcile/<int:examination_id>/', TriggerReconciliationAPIView.as_view(), name='trigger-reconciliation'),
+    path('student-published-results/', StudentPublishedResultsAPIView.as_view(), name='student-published-results-api'),
     path('', include(router.urls)),
 ]

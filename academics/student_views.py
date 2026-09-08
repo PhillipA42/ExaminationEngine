@@ -167,3 +167,46 @@ def student_exam_pass(request):
         'generation_date': date.today(),
     }
     return render(request, 'student/exam_pass.html', context)
+
+
+@student_required
+def student_results(request):
+    """
+    Student examination results view.
+    Only displays marks that are in 'PUBLISHED' status.
+    """
+    from academics.models import StudentMark
+
+    student = getattr(request.user, 'student_profile', None)
+    if not student and request.user.is_superuser:
+        student = Student.objects.first()
+
+    # Filter published marks only
+    published_marks = StudentMark.objects.filter(
+        student=student,
+        status='PUBLISHED'
+    ).select_related(
+        'examination__unit__course',
+        'examination__period'
+    ).order_by(
+        '-examination__period__academic_year',
+        'examination__period__semester',
+        'examination__unit__code'
+    )
+
+    # Compute summary statistics
+    total_units_passed = sum(1 for m in published_marks if m.grade in ['A', 'B', 'C', 'D'])
+    total_units_failed = sum(1 for m in published_marks if m.grade in ['E', 'F'])
+    average_score = round(sum(float(m.total_mark or 0) for m in published_marks) / len(published_marks), 2) if published_marks else 0.0
+
+    context = {
+        'student': student,
+        'published_marks': published_marks,
+        'total_published': published_marks.count(),
+        'total_units_passed': total_units_passed,
+        'total_units_failed': total_units_failed,
+        'average_score': average_score,
+        'today': date.today(),
+    }
+    return render(request, 'student/results.html', context)
+

@@ -40,12 +40,28 @@ def invigilator_login(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            if not hasattr(user, 'lecturer_profile') and not user.is_superuser:
-                messages.error(request, "Account found, but no Lecturer profile is associated with this username.")
+            user_roles = set(user.user_roles.values_list('role__name', flat=True)) if hasattr(user, 'user_roles') else set()
+            is_authorized_staff = (
+                hasattr(user, 'lecturer_profile') or
+                user.is_superuser or
+                user.is_staff or
+                bool(user_roles & {'EXAM_OFFICER', 'ADMIN', 'DEAN', 'COD', 'LECTURER'})
+            )
+            if not is_authorized_staff:
+                messages.error(request, "Account found, but no Lecturer or Officer profile is associated with this username.")
             else:
                 login(request, user)
                 messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
-                next_url = request.POST.get('next') or request.GET.get('next') or 'invigilator_dashboard'
+                next_url = request.POST.get('next') or request.GET.get('next')
+                if not next_url:
+                    if 'EXAM_OFFICER' in user_roles:
+                        next_url = 'officer_results_dashboard'
+                    elif 'DEAN' in user_roles:
+                        next_url = 'dean_results_dashboard'
+                    elif 'COD' in user_roles:
+                        next_url = 'cod_results_dashboard'
+                    else:
+                        next_url = 'invigilator_dashboard'
                 return redirect(next_url)
         else:
             messages.error(request, "Invalid username or password. Please try again.")

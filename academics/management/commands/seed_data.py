@@ -5,7 +5,10 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 
 from authentication.models import Role, UserRole
-from academics.models import School, Department, Course, Unit, Student, UnitRegistration, Lecturer
+from academics.models import (
+    School, Department, Course, Unit, Student, UnitRegistration, Lecturer,
+    StudentMark
+)
 from locations.models import Campus, Building, Floor, Room
 from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, ExamRoomAllocation, StudentExamAllocation
 from scheduling.engine import TimetableSchedulerEngine
@@ -15,7 +18,7 @@ from malpractice.models import MalpracticeCase, MalpracticeEvidence
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Seeds database with realistic test data including lecturers, duties, attendance with booklets, and malpractice cases.'
+    help = 'Seeds database with realistic test data including lecturers, duties, attendance with booklets, malpractice cases, and assessment marks.'
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -26,6 +29,10 @@ class Command(BaseCommand):
         # -------------------------------------------------------------
         student_role, _ = Role.objects.get_or_create(name=Role.STUDENT, defaults={'description': 'Student Role'})
         lecturer_role, _ = Role.objects.get_or_create(name=Role.LECTURER, defaults={'description': 'Lecturer Role'})
+        cod_role, _ = Role.objects.get_or_create(name=Role.COD, defaults={'description': 'Chairman of Department'})
+        dean_role, _ = Role.objects.get_or_create(name=Role.DEAN, defaults={'description': 'Dean of School'})
+        exam_officer_role, _ = Role.objects.get_or_create(name=Role.EXAM_OFFICER, defaults={'description': 'Examination Officer / Timetabler'})
+        admin_role, _ = Role.objects.get_or_create(name=Role.ADMIN, defaults={'description': 'System Administrator'})
 
         # -------------------------------------------------------------
         # 2. LOCATIONS (Campus, Building, Floor, Rooms)
@@ -149,6 +156,25 @@ class Command(BaseCommand):
             )
             lecturers.append(lecturer_profile)
 
+        # Assign COD role to Grace Hopper (lec002) and Dean to Donald Knuth (lec003)
+        UserRole.objects.get_or_create(user=User.objects.get(username='lec002'), role=cod_role)
+        UserRole.objects.get_or_create(user=User.objects.get(username='lec003'), role=dean_role)
+
+        # Create dedicated Examination Officer account
+        officer_user, created = User.objects.get_or_create(
+            username='officer001',
+            defaults={
+                'email': 'officer001@university.ac.ke',
+                'first_name': 'Tim',
+                'last_name': 'Berners-Lee',
+                'is_staff': True
+            }
+        )
+        if created:
+            officer_user.set_password('Password123!')
+            officer_user.save()
+            UserRole.objects.create(user=officer_user, role=exam_officer_role)
+
         # -------------------------------------------------------------
         # 5. STUDENTS & UNIT REGISTRATION
         # -------------------------------------------------------------
@@ -268,7 +294,7 @@ class Command(BaseCommand):
         # -------------------------------------------------------------
         # 9. SAMPLE EXAM ATTENDANCE & BOOKLET SERIAL NUMBERS
         # -------------------------------------------------------------
-        # Generate attendance records for the first scheduled exam (e.g. CSC401)
+        # Generate attendance records for the first scheduled exam (CSC401)
         primary_exam = examinations[0]
         allocated_room = Room.objects.filter(allocated_exams__examination=primary_exam).first() or room_a
         recording_lecturer = lecturers[0]
@@ -337,6 +363,59 @@ class Command(BaseCommand):
                 description="Signed Chief Invigilator statement and incident log entry"
             )
 
+        # -------------------------------------------------------------
+        # 11. UPLOADED MARKS (For 3-Way Reconciliation Testing)
+        # -------------------------------------------------------------
+        # Student 1: Clean (Present, Booklet Issued, Marks: 26+58 = 84 -> A)
+        StudentMark.objects.get_or_create(
+            student=students[0],
+            examination=primary_exam,
+            defaults={
+                'coursework_mark': 26.00,
+                'exam_mark': 58.00,
+                'submitted_by': recording_lecturer,
+                'status': 'SUBMITTED'
+            }
+        )
+
+        # Student 2: Clean (Present, Booklet Issued, Marks: 22+50 = 72 -> A)
+        StudentMark.objects.get_or_create(
+            student=students[1],
+            examination=primary_exam,
+            defaults={
+                'coursework_mark': 22.00,
+                'exam_mark': 50.00,
+                'submitted_by': recording_lecturer,
+                'status': 'SUBMITTED'
+            }
+        )
+
+        # Student 3: (Present with Booklet, NO MARKS -> Will trigger UNSUBMITTED_MARKS anomaly)
+
+        # Student 4: (Present with Booklet & Malpractice -> Marks submitted: 18+42 = 60 -> B)
+        StudentMark.objects.get_or_create(
+            student=students[3],
+            examination=primary_exam,
+            defaults={
+                'coursework_mark': 18.00,
+                'exam_mark': 42.00,
+                'submitted_by': recording_lecturer,
+                'status': 'SUBMITTED'
+            }
+        )
+
+        # Student 5: (Marked ABSENT in hall, but has uploaded marks -> Will trigger GHOST_MARKS anomaly)
+        StudentMark.objects.get_or_create(
+            student=students[4],
+            examination=primary_exam,
+            defaults={
+                'coursework_mark': 20.00,
+                'exam_mark': 45.00,
+                'submitted_by': recording_lecturer,
+                'status': 'SUBMITTED'
+            }
+        )
+
         self.stdout.write(self.style.SUCCESS("Successfully seeded database with full suite of test data!"))
         self.stdout.write(self.style.SUCCESS(f"- Exam Period: {period.name} (ID: {period.id})"))
         self.stdout.write(self.style.SUCCESS(f"- Test Lecturers: lec001 to lec003 (Password: Password123!)"))
@@ -344,3 +423,4 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f"- Invigilator Duties: Assigned for all {len(examinations)} examinations."))
         self.stdout.write(self.style.SUCCESS(f"- Exam Attendance: {len(students)} booklet serial records created for {primary_exam.unit.code}."))
         self.stdout.write(self.style.SUCCESS(f"- Malpractice Case: Created Case #{case_number} with 2 evidence attachments."))
+        self.stdout.write(self.style.SUCCESS(f"- Assessment Marks: Uploaded marks for reconciliation test scenarios."))
