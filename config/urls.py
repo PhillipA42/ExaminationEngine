@@ -22,6 +22,8 @@ urlpatterns = [
     path('api/auth/', include('authentication.urls')),
     path('api/academics/', include('academics.urls')),
     path('api/locations/', include('locations.urls')),
-    path('api-auth/', include('rest_framework.urls')),
     path('api/scheduling/', include('scheduling.urls')),
+    path('api/invigilators/', include('invigilators.urls')),
+    path('api/malpractice/', include('malpractice.urls')),
+    path('api-auth/', include('rest_framework.urls')),
 ]

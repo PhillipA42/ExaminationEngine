@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'academics',
     'locations',
     'scheduling',
+    'invigilators',
+    'malpractice',
 ]
 
 MIDDLEWARE = [
@@ -164,3 +166,4 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+LOGIN_REDIRECT_URL = '/api/scheduling/my-timetable/'
