@@ -11,7 +11,9 @@ from django.views.decorators.http import require_POST
 from django.db import IntegrityError, transaction
 
 from academics.models import Student, Lecturer
-from scheduling.models import StudentExamAllocation, ExamSchedule
+from locations.models import Room
+from scheduling.models import StudentExamAllocation, ExamSchedule, ExamRoomAllocation
+from malpractice.models import MalpracticeCase, MalpracticeEvidence
 from .models import InvigilatorDuty, ExamAttendance
 
 
@@ -173,6 +175,12 @@ def session_roster(request, duty_id):
     ).select_related('recorded_by__user')
     attendance_map = {att.student_id: att for att in attendance_records}
 
+    # Fetch malpractice cases reported for this exam session
+    session_malpractice_cases = MalpracticeCase.objects.filter(
+        examination=examination,
+        room=room
+    ).select_related('student__user', 'reported_by__user').prefetch_related('evidence_files').order_by('-reported_at')
+
     roster_items = []
     checked_in_count = 0
     absent_count = 0
@@ -193,15 +201,41 @@ def session_roster(request, duty_id):
             status = 'PENDING'
             pending_count += 1
 
+        # Check if student has malpractice reported
+        has_malpractice = session_malpractice_cases.filter(student=student).exists()
+
         roster_items.append({
             'student': student,
             'seat_number': alloc.seat_number,
             'attendance': attendance,
             'status': status,
+            'has_malpractice': has_malpractice,
         })
 
     total_allocated = len(roster_items)
     checkin_percent = int((checked_in_count / total_allocated * 100)) if total_allocated > 0 else 0
+
+    # Available rooms for selection in malpractice modal
+    allocated_rooms = Room.objects.filter(allocated_exams__examination=examination).distinct()
+    if not allocated_rooms.exists():
+        allocated_rooms = [room]
+
+    incident_types = [
+        "Unauthorized Material (Cheat Notes/Formulas)",
+        "Unauthorized Electronic Device (Phone/Smartwatch)",
+        "Impersonation / Proxy Candidate",
+        "Unauthorized Communication / Talking",
+        "Refusal to Surrender Booklet",
+        "Disruptive Hall Behavior",
+        "Other Examination Irregularity",
+    ]
+
+    severity_choices = [
+        ('LOW', 'Low - Minor irregularity'),
+        ('MEDIUM', 'Medium - Unauthorized materials present'),
+        ('HIGH', 'High - Active cheating / unauthorized device'),
+        ('CRITICAL', 'Critical - Impersonation / severe disruption'),
+    ]
 
     context = {
         'duty': duty,
@@ -214,6 +248,11 @@ def session_roster(request, duty_id):
         'absent_count': absent_count,
         'pending_count': pending_count,
         'checkin_percent': checkin_percent,
+        'allocated_rooms': allocated_rooms,
+        'incident_types': incident_types,
+        'severity_choices': severity_choices,
+        'session_malpractice_cases': session_malpractice_cases,
+        'malpractice_count': session_malpractice_cases.count(),
     }
     return render(request, 'invigilators/session_roster.html', context)
 
@@ -335,4 +374,93 @@ def student_checkin(request, duty_id):
         if is_json:
             return JsonResponse({'success': False, 'message': msg}, status=500)
         messages.error(request, msg)
+        return redirect('session_roster', duty_id=duty.id)
+
+
+@lecturer_required
+@require_POST
+def file_malpractice_report(request, duty_id):
+    """
+    Handles filing an academic malpractice case during an active exam.
+    Captures student, room, incident type, severity, detailed description, and evidence attachments.
+    """
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    if lecturer:
+        duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
+    else:
+        duty = get_object_or_404(InvigilatorDuty, id=duty_id)
+
+    student_id = request.POST.get('student_id')
+    room_id = request.POST.get('room_id') or duty.room_id
+    incident_type = request.POST.get('incident_type', '').strip()
+    severity = request.POST.get('severity', 'MEDIUM').strip()
+    description = request.POST.get('description', '').strip()
+    evidence_file = request.FILES.get('evidence_file')
+
+    # Basic validations
+    if not student_id:
+        messages.error(request, "Please select the implicated student.")
+        return redirect('session_roster', duty_id=duty.id)
+    if not incident_type:
+        messages.error(request, "Please specify the incident type.")
+        return redirect('session_roster', duty_id=duty.id)
+    if not description:
+        messages.error(request, "Please provide a detailed description of the observed malpractice incident.")
+        return redirect('session_roster', duty_id=duty.id)
+
+    student = get_object_or_404(Student, id=student_id)
+    room = get_object_or_404(Room, id=room_id)
+
+    # Generate unique case number
+    count = MalpracticeCase.objects.count() + 1
+    case_number = f"MAL-2026-{count:05d}"
+    while MalpracticeCase.objects.filter(case_number=case_number).exists():
+        count += 1
+        case_number = f"MAL-2026-{count:05d}"
+
+    try:
+        with transaction.atomic():
+            case = MalpracticeCase.objects.create(
+                case_number=case_number,
+                examination=duty.examination,
+                student=student,
+                room=room,
+                reported_by=lecturer,
+                incident_type=incident_type,
+                severity=severity,
+                description=description,
+                status='REPORTED'
+            )
+
+            if evidence_file:
+                MalpracticeEvidence.objects.create(
+                    case=case,
+                    file=evidence_file,
+                    description=f"Evidence uploaded on-site by {request.user.get_full_name() or request.user.username}"
+                )
+
+        msg = f"Malpractice Report #{case.case_number} successfully filed for candidate {student.registration_number} ({incident_type})."
+        
+        # Check if AJAX or multipart AJAX
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
+            return JsonResponse({
+                'success': True,
+                'message': msg,
+                'case_number': case.case_number,
+                'student_id': student.id,
+                'student_name': student.user.get_full_name() or student.user.username,
+                'registration_number': student.registration_number,
+                'incident_type': incident_type,
+                'severity': severity,
+                'has_evidence': bool(evidence_file),
+            })
+
+        messages.success(request, msg)
+        return redirect('session_roster', duty_id=duty.id)
+
+    except Exception as e:
+        err_msg = f"Failed to record malpractice case: {str(e)}"
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': err_msg}, status=500)
+        messages.error(request, err_msg)
         return redirect('session_roster', duty_id=duty.id)

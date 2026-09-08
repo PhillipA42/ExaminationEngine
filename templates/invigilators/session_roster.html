@@ -5,15 +5,24 @@
 {% block content %}
 <div class="row g-3">
 
-    <!-- Top Navigation & Breadcrumb -->
+    <!-- Top Navigation & Actions Bar -->
     <div class="col-12">
-        <div class="d-flex align-items-center justify-content-between">
-            <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1">
+        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+            <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
                 <i class="bi bi-arrow-left"></i>
                 <span>Back to Duties</span>
             </a>
 
             <div class="d-flex align-items-center gap-2">
+                <!-- Malpractice Report Trigger Button -->
+                <button type="button" class="btn btn-sm btn-danger d-flex align-items-center gap-1 shadow-sm px-3" onclick="openMalpracticeModal()">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                    <span class="fw-medium">Report Malpractice</span>
+                    {% if malpractice_count > 0 %}
+                    <span class="badge bg-white text-danger ms-1">{{ malpractice_count }}</span>
+                    {% endif %}
+                </button>
+
                 <button type="button" class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1" onclick="window.print()">
                     <i class="bi bi-printer"></i>
                     <span class="d-none d-sm-inline">Print Roster</span>
@@ -21,6 +30,32 @@
             </div>
         </div>
     </div>
+
+    <!-- Active Malpractice Alert (if cases exist for this session) -->
+    {% if session_malpractice_cases %}
+    <div class="col-12">
+        <div class="alert alert-danger card-custom border-danger-subtle p-3 mb-0 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-shield-exclamation fs-4 text-danger"></i>
+                    <div>
+                        <strong class="text-danger">Academic Malpractice Cases Logged ({{ session_malpractice_cases|length }})</strong>
+                        <div class="small text-muted">
+                            {% for case in session_malpractice_cases %}
+                            <span class="badge bg-danger text-white font-monospace me-1">#{{ case.case_number }}</span>
+                            <span>{{ case.student.registration_number }} ({{ case.incident_type }} - {{ case.get_severity_display|default:case.severity }})</span>
+                            {% if not forloop.last %}&bull;{% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="openMalpracticeModal()">
+                    <i class="bi bi-plus-lg me-1"></i>Report Another
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Session Details Header Card -->
     <div class="col-12">
@@ -151,7 +186,7 @@
                             <th>Seat #</th>
                             <th>Physical Booklet Serial #</th>
                             <th class="text-center">Status</th>
-                            <th class="text-end pe-3">Action</th>
+                            <th class="text-end pe-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rosterTableBody">
@@ -167,6 +202,9 @@
                             
                             <td>
                                 <span class="fw-bold text-dark font-monospace">{{ item.student.registration_number }}</span>
+                                {% if item.has_malpractice %}
+                                <span class="badge bg-danger ms-1" title="Malpractice Reported"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                                {% endif %}
                             </td>
 
                             <td>
@@ -201,11 +239,18 @@
                             </td>
 
                             <td class="text-end pe-3">
-                                <button type="button" class="btn btn-sm btn-primary-custom d-inline-flex align-items-center gap-1 px-3 py-1"
-                                    onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
-                                    <i class="bi bi-input-cursor-text"></i>
-                                    <span>{% if item.status == 'CHECKED_IN' %}Edit Booklet{% else %}Check In{% endif %}</span>
-                                </button>
+                                <div class="d-inline-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-primary-custom d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                        onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
+                                        <i class="bi bi-input-cursor-text"></i>
+                                        <span>{% if item.status == 'CHECKED_IN' %}Edit{% else %}Check In{% endif %}</span>
+                                    </button>
+
+                                    <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center px-2 py-1" title="Report Malpractice"
+                                        onclick="openMalpracticeModal('{{ item.student.id }}')">
+                                        <i class="bi bi-exclamation-octagon"></i>
+                                    </button>
+                                </div>
                             </td>
 
                         </tr>
@@ -230,7 +275,12 @@
                     
                     <div class="d-flex align-items-start justify-content-between mb-2">
                         <div>
-                            <div class="fw-bold font-monospace text-primary fs-6">{{ item.student.registration_number }}</div>
+                            <div class="fw-bold font-monospace text-primary fs-6">
+                                {{ item.student.registration_number }}
+                                {% if item.has_malpractice %}
+                                <span class="badge bg-danger ms-1"><i class="bi bi-exclamation-triangle-fill"></i> Case Filed</span>
+                                {% endif %}
+                            </div>
                             <div class="fw-semibold text-dark">{{ item.student.user.get_full_name|default:item.student.user.username }}</div>
                         </div>
 
@@ -256,11 +306,17 @@
                         </span>
                     </div>
 
-                    <button type="button" class="btn btn-sm btn-primary-custom w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-                        onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
-                        <i class="bi bi-input-cursor-text"></i>
-                        <span>{% if item.status == 'CHECKED_IN' %}Edit Booklet Serial{% else %}Check In Student{% endif %}</span>
-                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-primary-custom flex-grow-1 py-2 d-flex align-items-center justify-content-center gap-2"
+                            onclick="openCheckInModal('{{ item.student.id }}', '{{ item.student.registration_number }}', '{{ item.student.user.get_full_name|default:item.student.user.username }}', '{{ item.attendance.booklet_serial_number|default:'' }}', '{{ item.status }}', '{{ item.attendance.remarks|default:''|escapejs }}')">
+                            <i class="bi bi-input-cursor-text"></i>
+                            <span>{% if item.status == 'CHECKED_IN' %}Edit Booklet{% else %}Check In Student{% endif %}</span>
+                        </button>
+
+                        <button type="button" class="btn btn-sm btn-outline-danger py-2 px-3" title="Report Malpractice" onclick="openMalpracticeModal('{{ item.student.id }}')">
+                            <i class="bi bi-exclamation-octagon-fill"></i>
+                        </button>
+                    </div>
 
                 </div>
                 {% endfor %}
@@ -353,15 +409,140 @@
         </div>
     </div>
 </div>
+
+<!-- Malpractice Report Modal -->
+<div class="modal fade" id="malpracticeModal" tabindex="-1" aria-labelledby="malpracticeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content card-custom border-0">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title d-flex align-items-center gap-2" id="malpracticeModalLabel">
+                    <i class="bi bi-exclamation-octagon-fill text-warning"></i>
+                    <span>File Academic Malpractice Incident Report</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <form id="malpracticeForm" method="POST" action="{% url 'file_malpractice_report' duty_id=duty.id %}" enctype="multipart/form-data" onsubmit="submitMalpracticeReport(event)">
+                {% csrf_token %}
+                
+                <div class="modal-body p-4">
+                    
+                    <div class="alert alert-warning small d-flex align-items-start gap-2 mb-3">
+                        <i class="bi bi-info-circle-fill text-warning fs-5 flex-shrink-0"></i>
+                        <div>
+                            <strong>Official University Irregularity Report:</strong> All malpractice reports are immediately logged into the official record and forwarded to the Faculty Disciplinary Committee. Ensure all confiscated evidence is photographed and documented.
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        
+                        <!-- Student Selection Dropdown -->
+                        <div class="col-12 col-md-6">
+                            <label for="malpracticeStudentSelect" class="form-label fw-semibold small text-dark">
+                                Implicated Student / Candidate <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="malpracticeStudentSelect" name="student_id" required>
+                                <option value="">-- Select Student --</option>
+                                {% for item in roster_items %}
+                                <option value="{{ item.student.id }}">
+                                    {{ item.student.registration_number }} - {{ item.student.user.get_full_name|default:item.student.user.username }} (Seat: {{ item.seat_number|default:"Pending" }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Room Selection Dropdown -->
+                        <div class="col-12 col-md-6">
+                            <label for="malpracticeRoomSelect" class="form-label fw-semibold small text-dark">
+                                Examination Venue / Room <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="malpracticeRoomSelect" name="room_id" required>
+                                {% for r in allocated_rooms %}
+                                <option value="{{ r.id }}" {% if r.id == room.id %}selected{% endif %}>
+                                    {{ r.name }} ({{ r.building.name }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Incident Type Dropdown -->
+                        <div class="col-12 col-md-6">
+                            <label for="malpracticeIncidentType" class="form-label fw-semibold small text-dark">
+                                Incident Type / Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="malpracticeIncidentType" name="incident_type" required>
+                                <option value="">-- Select Incident Category --</option>
+                                {% for itype in incident_types %}
+                                <option value="{{ itype }}">{{ itype }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Severity Level Dropdown -->
+                        <div class="col-12 col-md-6">
+                            <label for="malpracticeSeverity" class="form-label fw-semibold small text-dark">
+                                Severity Level <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="malpracticeSeverity" name="severity" required>
+                                {% for val, label in severity_choices %}
+                                <option value="{{ val }}" {% if val == 'HIGH' %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Incident Detailed Description -->
+                        <div class="col-12">
+                            <label for="malpracticeDesc" class="form-label fw-semibold small text-dark">
+                                Detailed Incident Description & Observations <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="malpracticeDesc" name="description" rows="3" placeholder="Describe precisely what was observed (e.g., student had handwritten formula notes concealed inside calculator casing at 10:15 AM; student refused initial request to surrender material)..." required></textarea>
+                            <div class="form-text small">Include timestamp, exact location, behavior observed, and actions taken by invigilators.</div>
+                        </div>
+
+                        <!-- Photo Evidence Attachment File Input -->
+                        <div class="col-12">
+                            <label for="malpracticeEvidenceFile" class="form-label fw-semibold small text-dark d-flex align-items-center justify-content-between">
+                                <span><i class="bi bi-camera-fill text-danger me-1"></i>Upload Photo Evidence / Document (Optional)</span>
+                                <span class="badge bg-secondary" style="font-size: 0.7rem;">Images, PDF, Documents</span>
+                            </label>
+                            <input type="file" class="form-control" id="malpracticeEvidenceFile" name="evidence_file" accept="image/*,.pdf,.doc,.docx" onchange="previewEvidence(this)">
+                            <div class="form-text small">Upload clear photographic evidence of confiscated cheat sheets, unauthorized devices, or signed witness notes.</div>
+                            
+                            <!-- Image Preview Container -->
+                            <div id="evidencePreviewContainer" class="mt-2 d-none">
+                                <img id="evidencePreviewImg" src="" alt="Evidence Preview" class="img-thumbnail rounded" style="max-height: 160px;">
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Error Alert Box -->
+                    <div class="alert alert-danger d-none py-2 small mt-3" id="malpracticeErrorAlert"></div>
+
+                </div>
+
+                <div class="modal-footer bg-light py-2">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger btn-sm px-4 d-flex align-items-center gap-2" id="malpracticeSubmitBtn">
+                        <i class="bi bi-flag-fill"></i>
+                        <span>Submit Malpractice Report</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     let activeFilter = 'all';
     let checkInModalInstance = null;
+    let malpracticeModalInstance = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         checkInModalInstance = new bootstrap.Modal(document.getElementById('checkInModal'));
+        malpracticeModalInstance = new bootstrap.Modal(document.getElementById('malpracticeModal'));
     });
 
     function openCheckInModal(studentId, regNo, name, bookletSerial, status, remarks) {
@@ -380,7 +561,6 @@
         } else {
             document.getElementById('statusPresent').checked = true;
             togglePresenceState(true);
-            // If bookletSerial is absent placeholder, leave blank for manual input
             if (bookletSerial && !bookletSerial.startsWith('ABSENT-')) {
                 document.getElementById('modalBookletSerial').value = bookletSerial;
             } else {
@@ -394,6 +574,83 @@
                 document.getElementById('modalBookletSerial').focus();
             }
         }, 400);
+    }
+
+    function openMalpracticeModal(studentId = null) {
+        document.getElementById('malpracticeErrorAlert').classList.add('d-none');
+        document.getElementById('evidencePreviewContainer').classList.add('d-none');
+        document.getElementById('malpracticeEvidenceFile').value = '';
+        document.getElementById('malpracticeDesc').value = '';
+        document.getElementById('malpracticeIncidentType').value = '';
+
+        if (studentId) {
+            document.getElementById('malpracticeStudentSelect').value = studentId;
+        } else {
+            document.getElementById('malpracticeStudentSelect').value = '';
+        }
+
+        malpracticeModalInstance.show();
+    }
+
+    function previewEvidence(input) {
+        const previewContainer = document.getElementById('evidencePreviewContainer');
+        const previewImg = document.getElementById('evidencePreviewImg');
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewContainer.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                previewContainer.classList.add('d-none');
+            }
+        } else {
+            previewContainer.classList.add('d-none');
+        }
+    }
+
+    async function submitMalpracticeReport(e) {
+        e.preventDefault();
+        const form = document.getElementById('malpracticeForm');
+        const submitBtn = document.getElementById('malpracticeSubmitBtn');
+        const errorAlert = document.getElementById('malpracticeErrorAlert');
+        errorAlert.classList.add('d-none');
+
+        const formData = new FormData(form);
+
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Submitting...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                malpracticeModalInstance.hide();
+                // Reload page to reflect new malpractice badge and report count
+                window.location.reload();
+            } else {
+                errorAlert.innerText = result.message || 'Failed to file malpractice report.';
+                errorAlert.classList.remove('d-none');
+            }
+        } catch (err) {
+            errorAlert.innerText = `Network/Server Error: ${err.message}`;
+            errorAlert.classList.remove('d-none');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-flag-fill"></i> <span>Submit Malpractice Report</span>';
+        }
     }
 
     function togglePresenceState(isPresent) {
@@ -457,7 +714,6 @@
                     row.dataset.booklet = (result.booklet_serial_number || '').toLowerCase();
                     
                     // Update Booklet Cell
-                    const bookletCell = row.querySelector('.booklet-badge');
                     if (result.is_present) {
                         row.cells[4].innerHTML = `<span class="badge bg-dark font-monospace text-warning px-2 py-1 booklet-badge"><i class="bi bi-upc-scan me-1"></i>${result.booklet_serial_number}</span>`;
                     } else {
@@ -477,7 +733,7 @@
                     // Update Action button text
                     const actionBtn = row.querySelector('button');
                     if (actionBtn) {
-                        actionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit Booklet' : 'Check In'}</span>`;
+                        actionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit' : 'Check In'}</span>`;
                         actionBtn.setAttribute('onclick', `openCheckInModal('${studentId}', '${result.registration_number}', '${result.student_name}', '${result.booklet_serial_number}', '${result.status}', '${result.remarks}')`);
                     }
                 }
@@ -506,7 +762,7 @@
 
                     const mobileActionBtn = mobileCard.querySelector('button');
                     if (mobileActionBtn) {
-                        mobileActionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit Booklet Serial' : 'Check In Student'}</span>`;
+                        mobileActionBtn.innerHTML = `<i class="bi bi-input-cursor-text"></i> <span>${result.status === 'CHECKED_IN' ? 'Edit Booklet' : 'Check In Student'}</span>`;
                         mobileActionBtn.setAttribute('onclick', `openCheckInModal('${studentId}', '${result.registration_number}', '${result.student_name}', '${result.booklet_serial_number}', '${result.status}', '${result.remarks}')`);
                     }
                 }
