@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}My Notifications{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notification-item {
+        transition: background-color 0.15s ease, transform 0.1s ease;
+        border-left: 4px solid transparent;
+    }
+    .notification-item.unread {
+        border-left-color: var(--bs-primary, #4f46e5);
+        background-color: rgba(79, 70, 229, 0.04);
+    }
+    .notification-item:hover {
+        transform: translateX(2px);
+    }
+    .notif-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+    .empty-state {
+        padding: 5rem 1rem;
+        text-align: center;
+        color: #6b7280;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Page Header -->
+    <div class="card card-custom border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle d-none d-sm-block">
+                            <i class="bi bi-bell-fill fs-2"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-1 text-dark">Notification Inbox</h4>
+                            <p class="text-muted mb-0 small">
+                                System alerts, eligibility updates, timetable changes, and results notifications.
+                                {% if unread_count > 0 %}
+                                    <span class="badge bg-primary ms-1">{{ unread_count }} unread</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <a href="{% url 'student_timetable' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications List -->
+    <div class="card card-custom border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if notifications %}
+                <ul class="list-group list-group-flush">
+                    {% for notif in notifications %}
+                    <li class="list-group-item notification-item px-4 py-3 {% if not notif.is_read %}unread{% endif %}">
+                        <div class="d-flex align-items-start gap-3">
+
+                            <!-- Icon -->
+                            <div class="notif-icon
+                                {% if notif.notification_type == 'ELIGIBILITY_UPDATE' %}bg-warning bg-opacity-15 text-warning
+                                {% elif notif.notification_type == 'RESULTS_PUBLISHED' %}bg-success bg-opacity-15 text-success
+                                {% elif notif.notification_type == 'TIMETABLE_PUBLISHED' or notif.notification_type == 'TIMETABLE_CHANGE' %}bg-primary bg-opacity-15 text-primary
+                                {% elif notif.notification_type == 'EXAM_PASS_READY' %}bg-info bg-opacity-15 text-info
+                                {% elif notif.notification_type == 'MALPRACTICE_FLAGGED' %}bg-danger bg-opacity-15 text-danger
+                                {% elif notif.notification_type == 'RESULTS_REJECTED' or notif.notification_type == 'RESULTS_SUBMITTED' %}bg-secondary bg-opacity-15 text-secondary
+                                {% else %}bg-light text-dark
+                                {% endif %}">
+                                {% if notif.notification_type == 'ELIGIBILITY_UPDATE' %}
+                                    <i class="bi bi-shield-check"></i>
+                                {% elif notif.notification_type == 'RESULTS_PUBLISHED' %}
+                                    <i class="bi bi-award"></i>
+                                {% elif notif.notification_type == 'TIMETABLE_PUBLISHED' or notif.notification_type == 'TIMETABLE_CHANGE' %}
+                                    <i class="bi bi-calendar-event"></i>
+                                {% elif notif.notification_type == 'EXAM_PASS_READY' %}
+                                    <i class="bi bi-card-checklist"></i>
+                                {% elif notif.notification_type == 'MALPRACTICE_FLAGGED' %}
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                {% elif notif.notification_type == 'DUTY_ASSIGNED' or notif.notification_type == 'DUTY_REMINDER' %}
+                                    <i class="bi bi-person-badge"></i>
+                                {% else %}
+                                    <i class="bi bi-bell"></i>
+                                {% endif %}
+                            </div>
+
+                            <!-- Content -->
+                            <div class="flex-grow-1 min-width-0">
+                                <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+                                    <div>
+                                        <div class="fw-semibold text-dark {% if not notif.is_read %}fw-bold{% endif %}">
+                                            {{ notif.title }}
+                                            {% if not notif.is_read %}
+                                                <span class="badge bg-primary ms-1" style="font-size:0.65rem;">NEW</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-muted small mt-1">{{ notif.message }}</div>
+                                    </div>
+                                    <div class="text-nowrap text-muted" style="font-size:0.75rem;">
+                                        <i class="bi bi-clock me-1"></i>{{ notif.created_at|date:"d M Y, H:i" }}
+                                    </div>
+                                </div>
+
+                                <!-- Type badge + link -->
+                                <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                        {{ notif.get_notification_type_display }}
+                                    </span>
+                                    {% if notif.related_link %}
+                                        <a href="{{ notif.related_link }}" class="btn btn-link btn-sm p-0 text-primary" style="font-size:0.78rem;">
+                                            View Details <i class="bi bi-arrow-right-short"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-bell-slash fs-1 mb-3 d-block text-muted"></i>
+                    <h5 class="fw-semibold text-dark">No notifications yet</h5>
+                    <p class="text-muted small">You'll receive alerts here about your timetable, eligibility, and exam results.</p>
+                    <a href="{% url 'student_timetable' %}" class="btn btn-primary-custom mt-2">
+                        <i class="bi bi-house me-1"></i> Go to Dashboard
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -271,3 +271,181 @@ class ReconciliationAnomaly(models.Model):
     def __str__(self):
         student_str = self.student.registration_number if self.student else "General"
         return f"[{self.severity}] {self.get_anomaly_type_display()} - {student_str}"
+
+
+class EligibilityRule(models.Model):
+    """
+    Configurable examination eligibility policy rule.
+    Allows enabling/disabling institutional requirements (e.g. Fee clearance, min attendance).
+    """
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=50, unique=True)
+    is_enabled = models.BooleanField(default=True)
+    is_mandatory = models.BooleanField(default=True)
+    threshold_value = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, help_text="Configurable rule threshold (e.g., 75.00 for attendance %)")
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        status_str = "ENABLED" if self.is_enabled else "DISABLED"
+        return f"[{status_str}] {self.name} ({self.code})"
+
+
+class StudentClearance(models.Model):
+    """
+    Academic, financial, and administrative clearance record per student and semester.
+    Designed integration-ready for ERP/Finance synchronization or manual administrative clearance.
+    """
+    CLEARANCE_TYPES = [
+        ('FINANCIAL', 'Financial / Fee Clearance'),
+        ('ADMINISTRATIVE', 'Administrative Clearance'),
+        ('DISCIPLINARY', 'Disciplinary Clearance'),
+        ('ATTENDANCE', 'Lecture Attendance Clearance'),
+    ]
+
+    STATUS_CHOICES = [
+        ('CLEARED', 'Cleared'),
+        ('PENDING', 'Pending Clearance'),
+        ('NOT_CLEARED', 'Not Cleared / Blocked'),
+        ('EXEMPTED', 'Exempted'),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='clearances')
+    academic_year = models.CharField(max_length=20)
+    semester = models.IntegerField(default=1)
+    clearance_type = models.CharField(max_length=30, choices=CLEARANCE_TYPES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='CLEARED')
+    source_system = models.CharField(max_length=50, default='MANUAL')
+    external_reference = models.CharField(max_length=100, blank=True, null=True)
+    remarks = models.TextField(blank=True, null=True)
+    cleared_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='recorded_clearances')
+    cleared_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('student', 'academic_year', 'semester', 'clearance_type')
+        ordering = ['student', 'clearance_type']
+
+    def __str__(self):
+        return f"{self.student.registration_number} - {self.get_clearance_type_display()}: {self.get_status_display()}"
+
+
+class EligibilityOverride(models.Model):
+    """
+    Auditable administrative override granting conditional or full examination clearance.
+    Only authorized Examination Officers and Administrators can grant overrides.
+    """
+    STATUS_CHOICES = [
+        ('ELIGIBLE', 'Eligible (Overridden)'),
+        ('CONDITIONALLY_ELIGIBLE', 'Conditionally Eligible'),
+        ('NOT_ELIGIBLE', 'Not Eligible / Revoked'),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='eligibility_overrides')
+    examination_period = models.ForeignKey('scheduling.ExaminationPeriod', on_delete=models.CASCADE, related_name='eligibility_overrides')
+    examination = models.ForeignKey('scheduling.Examination', on_delete=models.CASCADE, null=True, blank=True, related_name='eligibility_overrides')
+    previous_status = models.CharField(max_length=30)
+    new_status = models.CharField(max_length=30, choices=STATUS_CHOICES)
+    reason = models.TextField(help_text="Mandatory audit justification for the override")
+    authorized_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='authorized_eligibility_overrides')
+    authorized_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-authorized_at']
+
+    def __str__(self):
+        return f"Override #{self.id}: {self.student.registration_number} -> {self.new_status} (By {self.authorized_by})"
+
+
+class EligibilityEvaluation(models.Model):
+    """
+    Cached and auditable evaluation summary per student and examination period.
+    """
+    STATUS_CHOICES = [
+        ('ELIGIBLE', 'Eligible'),
+        ('CONDITIONALLY_ELIGIBLE', 'Conditionally Eligible'),
+        ('PENDING_CLEARANCE', 'Pending Clearance'),
+        ('NOT_ELIGIBLE', 'Not Eligible'),
+    ]
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='eligibility_evaluations')
+    examination_period = models.ForeignKey('scheduling.ExaminationPeriod', on_delete=models.CASCADE, related_name='eligibility_evaluations')
+    overall_status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='PENDING_CLEARANCE')
+    is_eligible = models.BooleanField(default=False)
+    rules_passed = models.IntegerField(default=0)
+    rules_failed = models.IntegerField(default=0)
+    evaluation_details = models.JSONField(default=dict)
+    has_active_override = models.BooleanField(default=False)
+    evaluated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('student', 'examination_period')
+        ordering = ['-evaluated_at']
+
+    def __str__(self):
+        return f"{self.student.registration_number} - {self.examination_period.name}: {self.overall_status}"
+
+
+class Notification(models.Model):
+    """
+    Centralized in-app notification entity.
+    """
+    NOTIFICATION_TYPES = [
+        ('TIMETABLE_PUBLISHED', 'Timetable Published'),
+        ('TIMETABLE_CHANGE', 'Timetable Schedule Change'),
+        ('ELIGIBILITY_UPDATE', 'Examination Eligibility Update'),
+        ('EXAM_PASS_READY', 'Examination Pass Available'),
+        ('DUTY_REMINDER', 'Upcoming Invigilation Duty Reminder'),
+        ('DUTY_ASSIGNED', 'New Invigilation Duty Assigned'),
+        ('RESULTS_PUBLISHED', 'Examination Results Published'),
+        ('RESULTS_SUBMITTED', 'Results Awaiting Review'),
+        ('RESULTS_REJECTED', 'Results Rejected / Returned'),
+        ('MALPRACTICE_FLAGGED', 'Malpractice Case Update'),
+        ('ADMIN_ALERT', 'Administrative Alert'),
+    ]
+
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=50, choices=NOTIFICATION_TYPES)
+    related_link = models.CharField(max_length=255, blank=True, null=True)
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.get_notification_type_display()}] -> {self.recipient.username}: {self.title}"
+
+
+class NotificationDelivery(models.Model):
+    """
+    Delivery channels and deduplication tracking for dispatched notifications.
+    """
+    CHANNELS = [
+        ('IN_APP', 'In-App'),
+        ('EMAIL', 'Email'),
+        ('SMS', 'SMS'),
+    ]
+
+    STATUS_CHOICES = [
+        ('SENT', 'Sent'),
+        ('PENDING', 'Pending'),
+        ('FAILED', 'Failed'),
+    ]
+
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='deliveries')
+    channel = models.CharField(max_length=20, choices=CHANNELS)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='SENT')
+    sent_at = models.DateTimeField(auto_now_add=True)
+    error_message = models.TextField(blank=True, null=True)
+    dedup_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.notification.title} via {self.channel} ({self.status})"

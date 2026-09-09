@@ -139,7 +139,10 @@ def student_timetable(request):
 
 @student_required
 def student_exam_pass(request):
-    """Printable Examination Pass / Exam Card for the logged-in student."""
+    """Printable Examination Pass / Exam Card for the logged-in student.
+    Dynamically embeds the student's eligibility status from EligibilityService."""
+    from academics.eligibility_services import EligibilityService
+
     student = getattr(request.user, 'student_profile', None)
     if not student and request.user.is_superuser:
         student = Student.objects.first()
@@ -156,6 +159,16 @@ def student_exam_pass(request):
 
     active_period = allocations.first().examination.period if allocations.exists() else None
 
+    # ── Eligibility evaluation ──────────────────────────────────────────
+    eligibility_result = None
+    if active_period:
+        try:
+            svc = EligibilityService()
+            eligibility_result = svc.evaluate(student, active_period)
+        except Exception:
+            # Never let eligibility errors block exam-pass generation
+            pass
+
     # Verification Reference Code
     verification_code = f"PASS-2026-{student.registration_number.replace('/', '-')}"
 
@@ -165,8 +178,32 @@ def student_exam_pass(request):
         'active_period': active_period,
         'verification_code': verification_code,
         'generation_date': date.today(),
+        'eligibility': eligibility_result,
     }
     return render(request, 'student/exam_pass.html', context)
+
+
+@student_required
+def student_notifications(request):
+    """Student notification inbox view."""
+    from academics.models import Notification
+    from academics.notification_services import NotificationService
+
+    notifications = Notification.objects.filter(
+        recipient=request.user
+    ).prefetch_related('deliveries').order_by('-created_at')[:50]
+
+    svc = NotificationService()
+    unread_count = svc.get_unread_count(request.user)
+
+    # Mark all as read when the page is opened
+    svc.mark_all_read(request.user)
+
+    context = {
+        'notifications': notifications,
+        'unread_count': unread_count,
+    }
+    return render(request, 'student/notifications.html', context)
 
 
 @student_required

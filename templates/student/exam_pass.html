@@ -149,7 +149,21 @@
 
             <div class="col-12 col-sm-6 col-md-4">
                 <div class="text-muted" style="font-size: 0.75rem;">YEAR OF STUDY / STATUS</div>
-                <div class="fw-semibold text-dark">Year {{ student.year_of_study }} &bull; <span class="badge bg-success">ELIGIBLE</span></div>
+                <div class="fw-semibold text-dark">Year {{ student.year_of_study }} &bull;
+                    {% if eligibility %}
+                        {% if eligibility.overall_status == 'ELIGIBLE' %}
+                            <span class="badge bg-success">✅ ELIGIBLE</span>
+                        {% elif eligibility.overall_status == 'CONDITIONALLY_ELIGIBLE' %}
+                            <span class="badge bg-warning text-dark">⚠️ CONDITIONALLY ELIGIBLE</span>
+                        {% elif eligibility.overall_status == 'NOT_ELIGIBLE' %}
+                            <span class="badge bg-danger">❌ NOT ELIGIBLE</span>
+                        {% else %}
+                            <span class="badge bg-secondary">🕐 PENDING CLEARANCE</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-success">ELIGIBLE</span>
+                    {% endif %}
+                </div>
             </div>
 
         </div>

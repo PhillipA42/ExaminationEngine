@@ -279,6 +279,7 @@ def student_checkin(request, duty_id):
     """
     Handles student check-in, presence toggle, and booklet serial number capture.
     Accepts both JSON AJAX payloads and standard Form POST data.
+    Milestone 9: Eligibility gate applied — NOT_ELIGIBLE students are blocked from check-in.
     """
     lecturer = getattr(request.user, 'lecturer_profile', None)
     if lecturer:
@@ -309,6 +310,43 @@ def student_checkin(request, duty_id):
         return redirect('session_roster', duty_id=duty.id)
 
     student = get_object_or_404(Student, id=student_id)
+
+    # ── Milestone 9: Eligibility Gate ─────────────────────────────────────
+    # Only check eligibility when marking a student PRESENT.
+    # An invigilator may still mark a student absent regardless of eligibility.
+    eligibility_warning = None
+    if is_present:
+        try:
+            from academics.eligibility_services import EligibilityService
+            svc = EligibilityService()
+            examination_period = duty.examination.period
+            eligibility_result = svc.evaluate(student, examination_period)
+
+            if not eligibility_result.is_eligible and eligibility_result.overall_status == 'NOT_ELIGIBLE':
+                msg = (
+                    f"⛔ {student.registration_number} is NOT ELIGIBLE for this examination period "
+                    f"and cannot be checked in. Contact the Examination Office for an override."
+                )
+                if is_json:
+                    return JsonResponse({
+                        'success': False,
+                        'message': msg,
+                        'eligibility_status': eligibility_result.overall_status,
+                        'eligibility_details': eligibility_result.evaluation_details,
+                    }, status=403)
+                messages.error(request, msg)
+                return redirect('session_roster', duty_id=duty.id)
+
+            elif eligibility_result.overall_status == 'CONDITIONALLY_ELIGIBLE':
+                eligibility_warning = (
+                    f"⚠️ {student.registration_number} is CONDITIONALLY ELIGIBLE. "
+                    f"Some clearance requirements are pending. Check-in recorded."
+                )
+        except Exception as e:
+            # Eligibility gate must NEVER crash the check-in process
+            import logging
+            logging.getLogger(__name__).warning("Eligibility check skipped for student %s: %s", student_id, e)
+    # ── End Eligibility Gate ───────────────────────────────────────────────
 
     # If marked present, booklet serial number is required
     if is_present and not booklet_serial_number:
@@ -354,7 +392,7 @@ def student_checkin(request, duty_id):
             )
 
         success_msg = f"Check-in updated for {student.registration_number} (Booklet #{booklet_serial_number})."
-        
+
         if is_json:
             # Calculate updated session statistics
             total_allocated = StudentExamAllocation.objects.filter(examination=duty.examination, room=duty.room).count()
@@ -366,6 +404,7 @@ def student_checkin(request, duty_id):
             return JsonResponse({
                 'success': True,
                 'message': success_msg,
+                'eligibility_warning': eligibility_warning,
                 'student_id': student.id,
                 'registration_number': student.registration_number,
                 'student_name': student.user.get_full_name() or student.user.username,
@@ -382,6 +421,8 @@ def student_checkin(request, duty_id):
                 }
             })
 
+        if eligibility_warning:
+            messages.warning(request, eligibility_warning)
         messages.success(request, success_msg)
         return redirect('session_roster', duty_id=duty.id)
 
