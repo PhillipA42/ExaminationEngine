@@ -5,6 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.http import HttpResponseForbidden
+from django.core import signing
+from django.utils import timezone
 
 from academics.models import Student
 from scheduling.models import StudentExamAllocation, ExaminationPeriod
@@ -66,7 +68,7 @@ def student_timetable(request):
 
     # Fetch all exam allocations for this student with schedule & room details
     allocations_qs = StudentExamAllocation.objects.filter(
-        student=student
+        student=student, examination__period__status='PUBLISHED'
     ).select_related(
         'examination__unit__course',
         'examination__period',
@@ -149,7 +151,7 @@ def student_exam_pass(request):
 
     # Fetch all exam allocations for the active semester
     allocations = StudentExamAllocation.objects.filter(
-        student=student
+        student=student, examination__period__status='PUBLISHED'
     ).select_related(
         'examination__unit__course',
         'examination__period',
@@ -169,18 +171,49 @@ def student_exam_pass(request):
             # Never let eligibility errors block exam-pass generation
             pass
 
-    # Verification Reference Code
-    verification_code = f"PASS-2026-{student.registration_number.replace('/', '-')}"
+    # Signed token deliberately contains no personal data.  Verification always
+    # re-queries authoritative allocations, so timetable changes invalidate it.
+    pass_token = signing.dumps({
+        'student_id': student.id,
+        'period_id': active_period.id if active_period else None,
+        'allocation_ids': list(allocations.values_list('id', flat=True)),
+    }, salt='exam-pass')
+    verification_code = f"PASS-{signing.loads(pass_token, salt='exam-pass')['student_id']}-{active_period.id if active_period else 'NONE'}"
 
     context = {
         'student': student,
         'allocations': allocations,
         'active_period': active_period,
         'verification_code': verification_code,
+        'pass_token': pass_token,
         'generation_date': date.today(),
         'eligibility': eligibility_result,
     }
     return render(request, 'student/exam_pass.html', context)
+
+
+def exam_pass_verification(request):
+    """Staff-only pass validation; never exposes marks, evidence, or other data."""
+    if not request.user.is_authenticated:
+        return redirect(f"/invigilator/login/?next={request.path}")
+    roles = set(request.user.user_roles.filter(status='ACTIVE').values_list('role__name', flat=True)) if hasattr(request.user, 'user_roles') else set()
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    if not (request.user.is_superuser or lecturer or roles & {'EXAM_OFFICER', 'ADMIN'}):
+        return HttpResponseForbidden('Authorized examination personnel only.')
+    token = request.GET.get('token', '')
+    result = None
+    try:
+        data = signing.loads(token, salt='exam-pass', max_age=60 * 60 * 24 * 30)
+        allocations = StudentExamAllocation.objects.filter(
+            student_id=data['student_id'], examination__period_id=data['period_id'],
+            examination__period__status='PUBLISHED', id__in=data['allocation_ids']
+        ).select_related('student__user', 'examination__unit', 'room__building', 'room__floor')
+        if lecturer:
+            allocations = allocations.filter(examination__invigilator_duties__lecturer=lecturer)
+        result = {'valid': allocations.exists(), 'allocations': allocations, 'student': allocations.first().student if allocations.exists() else None}
+    except (signing.BadSignature, signing.SignatureExpired, KeyError):
+        result = {'valid': False, 'allocations': []}
+    return render(request, 'student/pass_verify.html', {'result': result})
 
 
 @student_required
@@ -246,4 +279,3 @@ def student_results(request):
         'today': date.today(),
     }
     return render(request, 'student/results.html', context)
-

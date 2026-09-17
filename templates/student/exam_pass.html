@@ -114,6 +114,7 @@
                 <div class="security-badge text-center small font-monospace">
                     <div style="font-size: 0.65rem;" class="text-uppercase text-muted">PASS AUTH REF</div>
                     <strong class="text-dark">{{ verification_code }}</strong>
+                    <div class="text-muted text-break" style="font-size: 0.55rem;">{{ pass_token }}</div>
                     <div class="text-muted" style="font-size: 0.65rem;">Issued: {{ generation_date|date:"d-M-Y" }}</div>
                 </div>
             </div>
@@ -249,7 +250,7 @@
 
             <div class="col-4">
                 <div class="d-inline-flex align-items-center justify-content-center p-2 border border-secondary rounded font-monospace" style="font-size: 0.75rem;">
-                    <i class="bi bi-qr-code fs-3 me-2"></i>
+                    <i class="bi bi-shield-check fs-3 me-2"></i>
                     <div class="text-start">
                         <div>OFFICIAL STAMP</div>
                         <div class="text-success fw-bold">AUTHENTICATED</div>

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Examination Pass Verification{% endblock %}
+{% block content %}
+<div class="container py-4"><div class="card shadow-sm"><div class="card-body">
+<h4>Examination Pass Verification</h4>
+{% if result.valid %}
+<div class="alert alert-success">Valid current examination pass.</div>
+<p class="mb-2"><strong>Candidate:</strong> {{ result.student.registration_number }}</p>
+<ul class="mb-0">{% for allocation in result.allocations %}<li>{{ allocation.examination.unit.code }} — {{ allocation.room.name }}, {{ allocation.room.building.name }}{% if allocation.examination.schedule %} ({{ allocation.examination.schedule.exam_date }} {{ allocation.examination.schedule.start_time }}){% endif %}</li>{% endfor %}</ul>
+{% else %}<div class="alert alert-danger">This pass is invalid, expired, unpublished, or not assigned to your session.</div>{% endif %}
+</div></div></div>
+{% endblock %}
