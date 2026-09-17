@@ -243,6 +243,7 @@
                         <li><a class="dropdown-item small" href="{% url 'dean_results_dashboard' %}"><i class="bi bi-award me-2 text-info"></i>Dean Faculty Review</a></li>
                         {% endif %}
                         {% if user.is_exam_officer or user.is_superuser %}
+                        <li><a class="dropdown-item small" href="{% url 'officer_planning_dashboard' %}"><i class="bi bi-calendar-range me-2 text-warning"></i>Exam Timetabling & Planning</a></li>
                         <li><a class="dropdown-item small" href="{% url 'officer_results_dashboard' %}"><i class="bi bi-shield-check me-2 text-success"></i>Exam Authority Publication</a></li>
                         {% endif %}
                     </ul>
@@ -265,7 +266,8 @@
                 <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-light">Lecturer</a>
                 <a href="{% url 'cod_results_dashboard' %}" class="btn btn-sm btn-outline-light">COD</a>
                 <a href="{% url 'dean_results_dashboard' %}" class="btn btn-sm btn-outline-light">Dean</a>
-                <a href="{% url 'officer_results_dashboard' %}" class="btn btn-sm btn-outline-info">Officer</a>
+                <a href="{% url 'officer_planning_dashboard' %}" class="btn btn-sm btn-outline-warning">Planning</a>
+                <a href="{% url 'officer_results_dashboard' %}" class="btn btn-sm btn-outline-info">Results</a>
                 <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger">Logout</a>
                 {% endif %}
 

@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Examination Planning & Timetabling{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h3 class="fw-bold text-dark mb-1">
+            <i class="bi bi-calendar-range text-primary me-2"></i>Examination Planning & Timetabling
+        </h3>
+        <p class="text-muted mb-0">
+            Manage examination periods, configure time slots, and run the constraint-satisfaction scheduling engine.
+        </p>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-0 bg-primary bg-opacity-10 text-primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="fw-semibold text-uppercase">Total Exam Periods</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ total_periods }}</h3>
+                </div>
+                <i class="bi bi-calendar-event fs-2"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-0 bg-info bg-opacity-10 text-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="fw-semibold text-uppercase">Active Periods</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ active_periods }}</h3>
+                </div>
+                <i class="bi bi-play-circle fs-2"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-0 bg-success bg-opacity-10 text-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="fw-semibold text-uppercase">Published Timetables</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ published_periods }}</h3>
+                </div>
+                <i class="bi bi-check-circle fs-2"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-custom p-3 border-0 bg-secondary bg-opacity-10 text-dark">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <small class="fw-semibold text-uppercase">Active Exam Rooms</small>
+                    <h3 class="fw-bold mb-0 mt-1">{{ total_rooms }}</h3>
+                </div>
+                <i class="bi bi-door-open fs-2"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Periods Table -->
+<div class="card card-custom border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0"><i class="bi bi-list-columns me-2 text-primary"></i>Examination Periods</h5>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Period Name</th>
+                        <th>Academic Year</th>
+                        <th>Semester</th>
+                        <th>Exam Window</th>
+                        <th>Total Exams</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in periods %}
+                    <tr>
+                        <td class="ps-4">
+                            <strong class="text-dark">{{ p.name }}</strong>
+                        </td>
+                        <td><span class="badge bg-light text-dark border font-monospace">{{ p.academic_year }}</span></td>
+                        <td>Semester {{ p.semester }}</td>
+                        <td>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i>{{ p.start_date|date:"d M Y" }} &rarr; {{ p.end_date|date:"d M Y" }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-primary border font-monospace">
+                                {{ p.scheduled_examinations_count }} / {{ p.total_examinations_count }} Scheduled
+                            </span>
+                        </td>
+                        <td>
+                            {% if p.status == 'PUBLISHED' %}
+                            <span class="badge badge-soft-success"><i class="bi bi-check-all me-1"></i>Published</span>
+                            {% elif p.status == 'DRAFT' %}
+                            <span class="badge badge-soft-warning"><i class="bi bi-pencil-square me-1"></i>Draft / Planning</span>
+                            {% else %}
+                            <span class="badge badge-soft-secondary">{{ p.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'period_timetable_planner' p.id %}" class="btn btn-primary" title="Open Timetable & Room Planner">
+                                    <i class="bi bi-calendar-check me-1"></i>Planner
+                                </a>
+                                <a href="{% url 'period_time_slots' p.id %}" class="btn btn-outline-secondary" title="Configure Time Slots">
+                                    <i class="bi bi-clock me-1"></i>Slots
+                                </a>
+                                <a href="{% url 'master_timetable_print' p.id %}" target="_blank" class="btn btn-outline-dark" title="Print Official Timetable">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            <i class="bi bi-calendar-x fs-3 d-block mb-2 text-secondary"></i>
+                            No examination periods recorded yet.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

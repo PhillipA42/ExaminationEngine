@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Time Slots: {{ period.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <a href="{% url 'period_timetable_planner' period.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Planner
+            </a>
+            <span class="badge bg-light text-dark border p-2">
+                Period: <strong>{{ period.name }}</strong>
+            </span>
+        </div>
+
+        <div class="card card-custom border-0 shadow-sm mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-plus-circle me-2 text-primary"></i>Add Configured Time Slot
+                </h5>
+                <small class="text-muted">Define regular daily sessions (e.g. Morning 09:00-12:00, Afternoon 14:00-17:00) used by the scheduling engine.</small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Slot Label / Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Morning Session" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Start Time</label>
+                            <input type="time" name="start_time" class="form-control font-monospace" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">End Time</label>
+                            <input type="time" name="end_time" class="form-control font-monospace" required>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                                <i class="bi bi-plus-lg me-1"></i>Add
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card card-custom border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-clock me-2 text-primary"></i>Current Configured Time Slots ({{ slots|length }})
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for s in slots %}
+                    <li class="list-group-item d-flex align-items-center justify-content-between py-3">
+                        <div>
+                            <strong class="text-dark">{{ s.name }}</strong>
+                            <small class="text-muted d-block">Daily examination session</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-light text-primary border font-monospace px-3 py-2 fs-6">
+                                {{ s.start_time|time:"H:i" }} &ndash; {{ s.end_time|time:"H:i" }}
+                            </span>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center py-4 text-muted">
+                        No custom time slots configured. The engine will default to standard Morning (09:00 - 12:00) and Afternoon (14:00 - 17:00) sessions.
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

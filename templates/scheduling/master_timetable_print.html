@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Official Examination Timetable - {{ period.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #212529;
+            background: #fff;
+            margin: 20px;
+        }
+        .header-box {
+            border-bottom: 2px solid #000;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .date-section-header {
+            background-color: #f1f3f5;
+            padding: 8px 12px;
+            font-weight: 700;
+            border-left: 4px solid #0d6efd;
+            margin-top: 24px;
+            margin-bottom: 10px;
+        }
+        table {
+            font-size: 0.88rem;
+        }
+        th {
+            background-color: #f8f9fa !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 10mm;
+            }
+            .page-break {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Toolbar -->
+    <div class="no-print d-flex justify-content-between align-items-center mb-4 p-3 bg-light border rounded">
+        <div>
+            <strong>Official Examination Master Timetable</strong> &bull; {{ period.name }}
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary btn-sm">
+                <i class="bi bi-printer"></i> Print / Save as PDF
+            </button>
+            <button onclick="window.close()" class="btn btn-outline-secondary btn-sm">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Header -->
+    <div class="header-box text-center">
+        <h3 class="fw-bold text-uppercase mb-1">Kisii University</h3>
+        <h5 class="fw-semibold mb-1">Office of the Registrar (Academic Affairs) &bull; Examination Directorate</h5>
+        <h6 class="text-uppercase fw-bold text-primary mb-1">{{ period.name }}</h6>
+        <div class="small text-muted">
+            Academic Year: {{ period.academic_year }} &bull; Semester {{ period.semester }} &bull; Window: {{ period.start_date|date:"d M Y" }} to {{ period.end_date|date:"d M Y" }}
+        </div>
+    </div>
+
+    <!-- Timetable Listings Grouped by Date -->
+    {% for exam_date, schedules in date_schedule_list %}
+    <div class="date-section-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-event me-2"></i>{{ exam_date|date:"l, d F Y" }}</span>
+        <span class="badge bg-secondary font-monospace">{{ schedules|length }} Session(s)</span>
+    </div>
+
+    <table class="table table-bordered table-sm align-middle mb-4">
+        <thead>
+            <tr>
+                <th style="width: 14%;">Time</th>
+                <th style="width: 12%;">Unit Code</th>
+                <th style="width: 30%;">Unit Name</th>
+                <th style="width: 24%;">Programme / Department</th>
+                <th style="width: 20%;">Allocated Room(s)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in schedules %}
+            <tr>
+                <td class="font-monospace fw-bold">
+                    {{ s.start_time|time:"H:i" }} &ndash; {{ s.end_time|time:"H:i" }}
+                </td>
+                <td class="font-monospace fw-bold text-primary">
+                    {{ s.examination.unit.code }}
+                </td>
+                <td>
+                    <strong>{{ s.examination.unit.name }}</strong>
+                </td>
+                <td>
+                    <small class="d-block text-muted">{{ s.examination.unit.course.department.name }}</small>
+                    <small>{{ s.examination.unit.course.name }}</small>
+                </td>
+                <td>
+                    {% for ra in s.examination.room_allocations.all %}
+                    <span class="badge bg-light text-dark border font-monospace me-1 mb-1">
+                        {{ ra.room.name }} ({{ ra.allocated_capacity }})
+                    </span>
+                    {% empty %}
+                    <span class="text-danger small">TBD</span>
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% empty %}
+    <div class="text-center py-5 text-muted">
+        No scheduled examinations available for this period.
+    </div>
+    {% endfor %}
+
+    <!-- Footer -->
+    <div class="mt-5 pt-3 border-top text-muted small d-flex justify-content-between align-items-center">
+        <div>
+            Generated by ExaminationEngine on {{ generated_date|date:"d M Y" }}
+        </div>
+        <div>
+            Official Document &bull; Approved by Examination Directorate
+        </div>
+    </div>
+</body>
+</html>

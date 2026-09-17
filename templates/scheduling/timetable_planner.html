@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Timetable Planner: {{ period.name }}{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'officer_planning_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <h3 class="fw-bold text-dark mb-0">
+                <i class="bi bi-calendar-check-fill text-primary me-2"></i>{{ period.name }}
+            </h3>
+        </div>
+        <div class="text-muted small mt-1">
+            <span><i class="bi bi-calendar3 me-1"></i>{{ period.start_date|date:"d M Y" }} &rarr; {{ period.end_date|date:"d M Y" }}</span>
+            <span class="mx-2">&bull;</span>
+            <span>Academic Year: <strong>{{ period.academic_year }}</strong>, Semester {{ period.semester }}</span>
+            <span class="mx-2">&bull;</span>
+            Status: 
+            {% if period.status == 'PUBLISHED' %}
+            <span class="badge bg-success"><i class="bi bi-check-all me-1"></i>PUBLISHED</span>
+            {% else %}
+            <span class="badge bg-warning text-dark"><i class="bi bi-pencil-square me-1"></i>{{ period.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <form method="POST" class="d-inline" onsubmit="return confirm('Run constraint optimization engine? This will schedule all examinations in this period while guaranteeing zero student or room clashes.');">
+            {% csrf_token %}
+            <button type="submit" name="action_generate" class="btn btn-primary d-inline-flex align-items-center gap-1 shadow-sm">
+                <i class="bi bi-cpu-fill"></i>
+                <span>Generate Timetable</span>
+            </button>
+        </form>
+
+        <form method="POST" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" name="action_validate" class="btn btn-outline-secondary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-shield-check"></i>
+                <span>Audit Constraints</span>
+            </button>
+        </form>
+
+        {% if not period.is_published %}
+        <form method="POST" class="d-inline" onsubmit="return confirm('Publish timetable? Once published, students will see their personalized examination schedules.');">
+            {% csrf_token %}
+            <button type="submit" name="action_publish" class="btn btn-success d-inline-flex align-items-center gap-1 shadow-sm" {% if audit_report and not audit_report.is_valid %}disabled title="Cannot publish: Resolve hard conflicts first"{% endif %}>
+                <i class="bi bi-send-check"></i>
+                <span>Publish Timetable</span>
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{% url 'master_timetable_print' period.id %}" target="_blank" class="btn btn-outline-dark d-inline-flex align-items-center gap-1">
+            <i class="bi bi-printer"></i>
+            <span>Print View</span>
+        </a>
+    </div>
+</div>
+
+<!-- Constraint Audit Banner -->
+{% if audit_report %}
+    {% if not audit_report.is_valid %}
+    <div class="alert alert-danger shadow-sm border-0 rounded-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-octagon-fill fs-4 text-danger"></i>
+                <h6 class="fw-bold mb-0 text-danger">Constraint Conflicts Detected ({{ audit_report.hard_violations|length }} Hard Violations)</h6>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#conflictDetails">
+                Toggle Conflict Details
+            </button>
+        </div>
+        <p class="small mb-0 text-danger opacity-75">
+            The examination schedule contains hard conflicts that violate university scheduling policies. Timetable publication is blocked until all hard constraints are resolved.
+        </p>
+        <div class="collapse show mt-3" id="conflictDetails">
+            <ul class="list-group list-group-flush border rounded-2 bg-white">
+                {% for v in audit_report.hard_violations %}
+                <li class="list-group-item list-group-item-danger py-2 small d-flex align-items-start gap-2">
+                    <span class="badge bg-danger">{{ v.constraint_type }}</span>
+                    <span>{{ v.message }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-success shadow-sm border-0 rounded-3 mb-4 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-check-circle-fill fs-4 text-success"></i>
+            <div>
+                <h6 class="fw-bold mb-0 text-success">Constraint Audit Passed (100% Conflict-Free)</h6>
+                <small class="text-muted">Zero student clashes, zero room double-bookings, and all room capacity limits satisfied.</small>
+            </div>
+        </div>
+        <span class="badge bg-success px-3 py-2">AUDIT CLEAN</span>
+    </div>
+    {% endif %}
+
+    {% if audit_report.soft_warnings %}
+    <div class="alert alert-info shadow-sm border-0 rounded-3 mb-4 py-2">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-info-circle-fill text-info"></i>
+            <small class="text-dark"><strong>Soft Optimization Notes:</strong> {{ audit_report.soft_warnings.0.message }}</small>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+<!-- KPI Metric Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card card-custom p-3 bg-white border-0 shadow-sm">
+            <small class="text-muted fw-semibold text-uppercase" style="font-size: 0.72rem;">Total Examinations</small>
+            <h3 class="fw-bold text-dark mb-0 mt-1">{{ total_examinations }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-custom p-3 bg-white border-0 shadow-sm">
+            <small class="text-muted fw-semibold text-uppercase" style="font-size: 0.72rem;">Scheduled Exams</small>
+            <h3 class="fw-bold text-primary mb-0 mt-1">{{ scheduled_count }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-custom p-3 bg-white border-0 shadow-sm">
+            <small class="text-muted fw-semibold text-uppercase" style="font-size: 0.72rem;">Unscheduled Exams</small>
+            <h3 class="fw-bold {% if unscheduled_count > 0 %}text-danger{% else %}text-success{% endif %} mb-0 mt-1">{{ unscheduled_count }}</h3>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card card-custom p-3 bg-white border-0 shadow-sm">
+            <small class="text-muted fw-semibold text-uppercase" style="font-size: 0.72rem;">Configured Time Slots</small>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+                <h3 class="fw-bold text-dark mb-0">{{ time_slots|length }}</h3>
+                <a href="{% url 'period_time_slots' period.id %}" class="btn btn-sm btn-outline-secondary py-0" style="font-size: 0.75rem;">Manage</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card card-custom border-0 shadow-sm mb-4">
+    <div class="card-body p-3">
+        <form method="GET" class="row g-2 align-items-center">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Filter by Date</label>
+                <input type="date" name="date" class="form-control form-control-sm" value="{{ filter_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Filter by Department</label>
+                <select name="department" class="form-select form-select-sm">
+                    <option value="">All Departments</option>
+                    {% for d in departments %}
+                    <option value="{{ d.id }}" {% if filter_dept == d.id|stringformat:"i" %}selected{% endif %}>{{ d.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Filter by Room</label>
+                <select name="room" class="form-select form-select-sm">
+                    <option value="">All Rooms</option>
+                    {% for r in rooms %}
+                    <option value="{{ r.id }}" {% if filter_room == r.id|stringformat:"i" %}selected{% endif %}>{{ r.name }} (Cap: {{ r.capacity }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end gap-2 mt-auto">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                <a href="{% url 'period_timetable_planner' period.id %}" class="btn btn-sm btn-outline-secondary">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Scheduled Examinations Table -->
+<div class="card card-custom border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom py-3">
+        <h5 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-table me-2 text-primary"></i>Scheduled Examination Sessions ({{ schedule_items|length }})
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-muted small text-uppercase">
+                    <tr>
+                        <th class="ps-4">Date & Time</th>
+                        <th>Course & Unit</th>
+                        <th>Department / School</th>
+                        <th>Room Allocations</th>
+                        <th class="text-center">Students (Alloc / Reg)</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in schedule_items %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ item.schedule.exam_date|date:"l, d M Y" }}</div>
+                            <small class="text-muted font-monospace">
+                                <i class="bi bi-clock me-1"></i>{{ item.schedule.start_time|time:"H:i" }} &ndash; {{ item.schedule.end_time|time:"H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary font-monospace">{{ item.unit.code }}</span>
+                                <strong class="text-dark">{{ item.unit.name }}</strong>
+                            </div>
+                            <small class="text-muted">{{ item.unit.course.name }}</small>
+                        </td>
+                        <td>
+                            <div class="small fw-semibold text-dark">{{ item.unit.course.department.name }}</div>
+                            <small class="text-muted">{{ item.unit.course.department.school.name }}</small>
+                        </td>
+                        <td>
+                            {% for ra in item.rooms_allocated %}
+                            <div class="d-inline-block me-1 mb-1">
+                                <span class="badge bg-light text-dark border font-monospace">
+                                    <i class="bi bi-door-open me-1 text-primary"></i>{{ ra.room.name }} ({{ ra.allocated_capacity }} seats)
+                                </span>
+                            </div>
+                            {% empty %}
+                            <span class="badge bg-warning text-dark">No Room Allocated</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if item.alloc_count == item.reg_count and item.reg_count > 0 %}bg-success{% else %}bg-warning text-dark{% endif %} font-monospace">
+                                {{ item.alloc_count }} / {{ item.reg_count }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'manual_schedule_exam' item.examination.id %}" class="btn btn-sm btn-outline-primary" title="Edit date, time, and room allocations">
+                                <i class="bi bi-pencil-square me-1"></i>Adjust
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-1 d-block mb-2 text-secondary"></i>
+                            No examinations scheduled yet for this period.
+                            <div class="mt-2">
+                                <form method="POST" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" name="action_generate" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-cpu-fill me-1"></i>Run Constraint Generator Now
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Schedule Examination: {{ examination.unit.code }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <a href="{% url 'period_timetable_planner' period.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Planner
+            </a>
+            <span class="badge bg-light text-dark border p-2">
+                Period: <strong>{{ period.name }}</strong> ({{ period.start_date|date:"d M Y" }} &ndash; {{ period.end_date|date:"d M Y" }})
+            </span>
+        </div>
+
+        {% if validation_errors %}
+        <div class="alert alert-danger shadow-sm border-0 rounded-3 mb-4">
+            <h6 class="fw-bold mb-2 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Scheduling Constraint Conflicts Detected</h6>
+            <ul class="mb-0 small">
+                {% for err in validation_errors %}
+                <li>{{ err }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="card card-custom border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark">
+                    <i class="bi bi-clock-history me-2 text-primary"></i>Schedule Examination: 
+                    <span class="badge bg-primary font-monospace">{{ examination.unit.code }}</span> 
+                    {{ examination.unit.name }}
+                </h5>
+                <small class="text-muted">
+                    Total Registered Students: <strong>{{ examination.registered_students_count }}</strong>
+                </small>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Examination Date <span class="text-danger">*</span></label>
+                            <input type="date" name="exam_date" class="form-control" required
+                                   min="{{ period.start_date|date:'Y-m-d' }}" 
+                                   max="{{ period.end_date|date:'Y-m-d' }}"
+                                   value="{{ existing_schedule.exam_date|date:'Y-m-d' }}">
+                            <div class="form-text">Must fall between {{ period.start_date|date:"d M Y" }} and {{ period.end_date|date:"d M Y" }}.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Start Time <span class="text-danger">*</span></label>
+                            <input type="time" name="start_time" class="form-control font-monospace" required
+                                   value="{{ existing_schedule.start_time|time:'H:i'|default:'09:00' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">End Time <span class="text-danger">*</span></label>
+                            <input type="time" name="end_time" class="form-control font-monospace" required
+                                   value="{{ existing_schedule.end_time|time:'H:i'|default:'12:00' }}">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold border-bottom pb-2 mb-3 text-dark">
+                        <i class="bi bi-door-open me-2 text-primary"></i>Assign Examination Rooms
+                    </h6>
+                    <p class="small text-muted mb-3">
+                        Select one or more active rooms. The total capacity of selected rooms must be at least 
+                        <strong>{{ examination.registered_students_count }}</strong> seats.
+                    </p>
+
+                    <div class="row g-2 mb-4">
+                        {% for r in active_rooms %}
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 bg-light d-flex align-items-center justify-content-between">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="rooms" value="{{ r.id }}" id="room_{{ r.id }}"
+                                           {% if r.id in existing_allocations %}checked{% endif %}>
+                                    <label class="form-check-label fw-bold text-dark" for="room_{{ r.id }}">
+                                        {{ r.name }}
+                                        <span class="badge bg-secondary ms-1 font-monospace" style="font-size: 0.7rem;">Cap: {{ r.capacity }}</span>
+                                    </label>
+                                    <small class="d-block text-muted">{{ r.building.name }} &bull; {{ r.floor.name }}</small>
+                                </div>
+                                <div style="max-width: 110px;">
+                                    <label class="form-label small text-muted mb-0" style="font-size: 0.7rem;">Seat Limit</label>
+                                    <input type="number" name="capacity_{{ r.id }}" class="form-control form-control-sm font-monospace text-center"
+                                           max="{{ r.capacity }}" min="1" 
+                                           value="{{ existing_allocations|default_if_none:''|slice:r.id|default:r.capacity }}">
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'period_timetable_planner' period.id %}" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                            <i class="bi bi-check-lg me-1"></i>Validate & Save Schedule
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
