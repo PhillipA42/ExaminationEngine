@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'scheduling',
     'invigilators',
     'malpractice',
+    'verification',
 ]
 
 MIDDLEWARE = [
