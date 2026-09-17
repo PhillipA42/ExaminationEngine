@@ -15,6 +15,7 @@ from locations.models import Campus, Building, Floor, Room
 from scheduling.models import ExaminationPeriod, Examination
 from invigilators.models import ExamAttendance
 from academics.results_services import BulkMarkUploadService, ResultWorkflowService
+from academics.eligibility_services import EligibilityService
 
 User = get_user_model()
 
@@ -382,3 +383,14 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 405)
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'DRAFT')
+
+    def test_exam_specific_eligibility_requires_unit_registration(self):
+        user = User.objects.create_user(username='unregistered_exam_student', email='unregistered.exam@example.test', password='Password123!')
+        student = Student.objects.create(
+            user=user, registration_number='CT101/0999/26', course=self.course_cs,
+            department=self.dept_cs, school=self.school_cs,
+        )
+        result = EligibilityService().evaluate_for_examination(student, self.exam_cs)
+        self.assertFalse(result.is_eligible)
+        self.assertEqual(result.overall_status, 'NOT_ELIGIBLE')
+        self.assertEqual(result.evaluation_details['rules'][0]['rule_code'], 'UNIT_REGISTERED')

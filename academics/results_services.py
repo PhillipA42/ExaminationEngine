@@ -92,6 +92,11 @@ class BulkMarkUploadService:
                     new_status=submission.status,
                     comment=f"Bulk imported {len(saved_marks)} student marks from '{file_obj.name}'."
                 )
+                student_users = [mark.student.user for mark in saved_marks]
+                from academics.notification_services import NotificationService
+                transaction.on_commit(lambda: [NotificationService().notify_marks_entered(
+                    user, submission.unit.code, submission.examination_id
+                ) for user in student_users])
 
             return {
                 'success': True,
@@ -363,6 +368,7 @@ class ResultWorkflowService:
         ).values_list('student_id', flat=True))
 
         saved_count = 0
+        changed_student_ids = []
         with transaction.atomic():
             for item in marks_payload:
                 student_id = item.get('student_id')
@@ -390,6 +396,7 @@ class ResultWorkflowService:
                     }
                 )
                 saved_count += 1
+                changed_student_ids.append(student_id)
 
             ResultWorkflowAudit.objects.create(
                 submission=submission,
@@ -399,6 +406,13 @@ class ResultWorkflowService:
                 new_status=submission.status,
                 comment=f"Saved {saved_count} draft marks manually."
             )
+            student_users = list(Student.objects.filter(id__in=changed_student_ids).values_list('user', flat=True))
+            from authentication.models import User
+            recipients = list(User.objects.filter(id__in=student_users))
+            from academics.notification_services import NotificationService
+            transaction.on_commit(lambda: [NotificationService().notify_marks_entered(
+                user, submission.unit.code, submission.examination_id
+            ) for user in recipients])
 
         return saved_count
 
@@ -606,6 +620,14 @@ class ResultWorkflowService:
                     new_status='PUBLISHED',
                     comment=comments or "Official examination results approved and published to Student Portal."
                 )
+                recipients = list(StudentMark.objects.filter(
+                    examination=submission.examination, submission=submission
+                ).select_related('student__user').values_list('student__user', flat=True))
+                from authentication.models import User
+                from academics.notification_services import NotificationService
+                transaction.on_commit(lambda: [NotificationService().notify_results_published(
+                    user, submission.unit.code
+                ) for user in User.objects.filter(id__in=recipients)])
             elif action.upper() == 'REJECT':
                 if not rejection_reason.strip():
                     raise ValidationError("Rejection reason is mandatory when rejecting results.")

@@ -196,7 +196,7 @@ class NotificationService:
             dedup_context=period_name,
         )
 
-    def notify_results_published(self, student_user, unit_code: str, channels=("IN_APP",)):
+    def notify_results_published(self, student_user, unit_code: str, channels=("IN_APP", "EMAIL")):
         return self.notify(
             recipient=student_user,
             notification_type="RESULTS_PUBLISHED",
@@ -208,6 +208,31 @@ class NotificationService:
             related_link="/student/results/",
             channels=channels,
             dedup_context=unit_code,
+        )
+
+    def notify_marks_entered(self, student_user, unit_code: str, examination_id: int, channels=("IN_APP", "EMAIL")):
+        return self.notify(
+            recipient=student_user,
+            notification_type="MARKS_ENTERED",
+            title=f"Marks Received — {unit_code}",
+            message=(f"Your marks for {unit_code} have been entered and are undergoing the required "
+                     "verification and approval process. This is not an official published result."),
+            related_link="/student/results/",
+            channels=channels,
+            dedup_context=f"exam:{examination_id}",
+        )
+
+    def notify_attendance_recorded(self, student_user, unit_code: str, examination_id: int, channels=("IN_APP", "EMAIL")):
+        """Confirmation only; no invigilator, booklet, or disciplinary data is exposed."""
+        return self.notify(
+            recipient=student_user,
+            notification_type="ATTENDANCE_RECORDED",
+            title=f"Examination Attendance Recorded — {unit_code}",
+            message=(f"Your attendance for {unit_code} has been recorded. "
+                     "Please contact the Examination Office promptly if this is incorrect."),
+            related_link="/student/timetable/",
+            channels=channels,
+            dedup_context=f"exam:{examination_id}",
         )
 
     def notify_duty_assigned(self, lecturer_user, unit_code: str, exam_date: str, room_name: str, channels=("IN_APP",)):

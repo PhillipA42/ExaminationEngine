@@ -327,7 +327,7 @@ def student_checkin(request, duty_id):
             from academics.eligibility_services import EligibilityService
             svc = EligibilityService()
             examination_period = duty.examination.period
-            eligibility_result = svc.evaluate(student, examination_period)
+            eligibility_result = svc.evaluate_for_examination(student, duty.examination)
 
             if not eligibility_result.is_eligible and eligibility_result.overall_status == 'NOT_ELIGIBLE':
                 msg = (
@@ -397,6 +397,13 @@ def student_checkin(request, duty_id):
                     'remarks': remarks
                 }
             )
+            if is_present:
+                # Dispatch only once the attendance transaction commits; a rolled-back
+                # check-in must never produce a false confirmation.
+                from academics.notification_services import NotificationService
+                transaction.on_commit(lambda: NotificationService().notify_attendance_recorded(
+                    student.user, duty.examination.unit.code, duty.examination_id
+                ))
 
         success_msg = f"Check-in updated for {student.registration_number} (Booklet #{booklet_serial_number})."
 
@@ -612,7 +619,7 @@ def batch_student_checkin(request, duty_id):
             # Milestone 9: Eligibility Check for Present students
             if is_present:
                 try:
-                    eval_res = eligibility_svc.evaluate(student, period)
+                    eval_res = eligibility_svc.evaluate_for_examination(student, duty.examination)
                     if not eval_res.is_eligible and eval_res.overall_status == 'NOT_ELIGIBLE':
                         errors.append(f"{student.registration_number} is NOT ELIGIBLE for examinations and was skipped.")
                         continue

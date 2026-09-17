@@ -405,6 +405,8 @@ class Notification(models.Model):
         ('RESULTS_SUBMITTED', 'Results Awaiting Review'),
         ('RESULTS_REJECTED', 'Results Rejected / Returned'),
         ('MALPRACTICE_FLAGGED', 'Malpractice Case Update'),
+        ('ATTENDANCE_RECORDED', 'Examination Attendance Recorded'),
+        ('MARKS_ENTERED', 'Marks Entered (Pending Approval)'),
         ('ADMIN_ALERT', 'Administrative Alert'),
     ]
 

@@ -16,6 +16,7 @@ from django.db.models import Q
 
 from academics.models import (
     Student,
+    UnitRegistration,
     StudentClearance,
     EligibilityRule,
     EligibilityOverride,
@@ -111,6 +112,7 @@ class EligibilityService:
         active_override = EligibilityOverride.objects.filter(
             student=student,
             examination_period=examination_period,
+            examination__isnull=True,
             is_active=True,
         ).filter(
             Q(expires_at__isnull=True) | Q(expires_at__gt=now)
@@ -124,6 +126,48 @@ class EligibilityService:
         # 3. Persist / update cache
         self._cache_evaluation(student, examination_period, result)
         return result
+
+    def evaluate_for_examination(self, student: Student, examination, force_refresh: bool = False) -> EligibilityResult:
+        """Evaluate a student against one authoritative examination and its unit registration.
+
+        The cached evaluation remains period-level for clearance performance, while the
+        unit-registration rule is evaluated on every examination-specific request.
+        """
+        if examination.period_id is None or examination.unit_id is None:
+            raise ValueError("A valid examination, period, and unit are required.")
+        now = datetime.now(timezone.utc)
+        specific_override = EligibilityOverride.objects.filter(
+            student=student, examination=examination, is_active=True,
+        ).filter(Q(expires_at__isnull=True) | Q(expires_at__gt=now)).order_by("-authorized_at").first()
+        if specific_override:
+            result = self._build_override_result(specific_override)
+            result.evaluation_details.update({"examination_id": examination.id, "unit_id": examination.unit_id})
+            return result
+        base = self.evaluate(student, examination.period, force_refresh=force_refresh)
+        registered = UnitRegistration.objects.filter(
+            student=student, unit=examination.unit,
+            academic_year=examination.period.academic_year,
+            semester=examination.period.semester,
+            registration_status="REGISTERED",
+        ).exists()
+        details = dict(base.evaluation_details)
+        rules = list(details.get("rules", []))
+        rules.insert(0, {
+            "rule_code": "UNIT_REGISTERED", "rule_name": "Unit registration",
+            "is_mandatory": True, "status": "PASSED" if registered else "FAILED",
+            "passed": registered, "source": "UnitRegistration",
+        })
+        details.update({"examination_id": examination.id, "unit_id": examination.unit_id, "rules": rules})
+        # An explicit examination override is honoured by the period evaluator;
+        # otherwise an absent registration is always a hard, authoritative failure.
+        return EligibilityResult(
+            overall_status=base.overall_status if registered else "NOT_ELIGIBLE",
+            is_eligible=base.is_eligible and registered,
+            rules_passed=base.rules_passed + int(registered),
+            rules_failed=base.rules_failed + int(not registered),
+            has_active_override=base.has_active_override,
+            evaluation_details=details,
+        )
 
     # ────────────────────────────────────────────────────────────────────
     # Internal helpers
@@ -181,7 +225,9 @@ class EligibilityService:
 
         for rule in enabled_rules:
             clearance_type = self._RULE_TO_CLEARANCE.get(rule.code)
-            status = clearance_map.get(clearance_type, "CLEARED") if clearance_type else "CLEARED"
+            # Missing external/administrative evidence is not evidence of clearance.
+            # It remains pending until an authoritative record or override exists.
+            status = clearance_map.get(clearance_type, "PENDING") if clearance_type else "PENDING"
 
             passed = status in ("CLEARED", "EXEMPTED")
 
@@ -196,6 +242,7 @@ class EligibilityService:
                 "rule_code": rule.code,
                 "rule_name": rule.name,
                 "is_mandatory": rule.is_mandatory,
+                "status": "PASSED" if passed else "PENDING" if status == "PENDING" else "FAILED",
                 "clearance_status": status,
                 "passed": passed,
             })
