@@ -3,7 +3,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from scheduling.models import Examination, ExaminationPeriod
-from invigilators.models import ExamAttendance
+from scheduling.models import StudentExamAllocation
+from invigilators.models import ExamAttendance, InvigilatorDuty
 from malpractice.models import MalpracticeCase
 from .models import Student, UnitRegistration, StudentMark, ReconciliationReport, ReconciliationAnomaly
 
@@ -52,6 +53,10 @@ class ExamReconciliationEngine:
         all_attendance_ids = set(a.student_id for a in attendances)
         attendance_map = {a.student_id: a for a in attendances}
 
+        # M2 remains authoritative for the expected hall roster.
+        allocations = list(StudentExamAllocation.objects.filter(examination=self.examination).select_related('student', 'room'))
+        allocation_map = {a.student_id: a for a in allocations}
+
         # 3. Fetch Uploaded Marks
         marks = StudentMark.objects.filter(
             examination=self.examination
@@ -75,6 +80,36 @@ class ExamReconciliationEngine:
         students_db_map = {
             s.id: s for s in Student.objects.filter(id__in=all_involved_student_ids).select_related('user', 'course')
         }
+
+        # -------------------------------------------------------------
+        # Rule 0: Registration, allocation, room, and invigilator integrity.
+        # These are neutral operational discrepancies; they do not alter source data.
+        # -------------------------------------------------------------
+        for allocation in allocations:
+            if allocation.student_id not in registered_student_ids:
+                anomalies_to_create.append({'student': allocation.student, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'CRITICAL',
+                    'description': f"Allocated candidate {allocation.student.registration_number} is not registered for {unit.code}.",
+                    'evidence_summary': f"Allocation #{allocation.id}, room {allocation.room.name}"})
+        if period.status == 'PUBLISHED':
+            for student_id in registered_student_ids - set(allocation_map):
+                student = registered_students_map[student_id]
+                anomalies_to_create.append({'student': student, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'HIGH',
+                    'description': f"Registered candidate {student.registration_number} has no published examination-room allocation.", 'evidence_summary': 'Missing StudentExamAllocation'})
+        for attendance in attendances:
+            allocation = allocation_map.get(attendance.student_id)
+            if not allocation:
+                anomalies_to_create.append({'student': attendance.student, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'CRITICAL',
+                    'description': f"Attendance was recorded for {attendance.student.registration_number} without a room allocation.", 'evidence_summary': f"Attendance #{attendance.id}"})
+            elif allocation.room_id != attendance.room_id:
+                anomalies_to_create.append({'student': attendance.student, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'CRITICAL',
+                    'description': f"Attendance room {attendance.room.name} differs from allocated room {allocation.room.name}.", 'evidence_summary': f"Allocation #{allocation.id}"})
+            if attendance.recorded_by_id and not InvigilatorDuty.objects.filter(examination=self.examination, room=attendance.room, lecturer_id=attendance.recorded_by_id).exists():
+                anomalies_to_create.append({'student': attendance.student, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'HIGH',
+                    'description': f"Attendance was recorded by a lecturer without an invigilation duty for {attendance.room.name}.", 'evidence_summary': f"Attendance #{attendance.id}"})
+        for allocation in allocations:
+            if not InvigilatorDuty.objects.filter(examination=self.examination, room=allocation.room).exists():
+                anomalies_to_create.append({'student': None, 'anomaly_type': 'OTHER_IRREGULARITY', 'severity': 'HIGH',
+                    'description': f"Allocated room {allocation.room.name} has no assigned invigilator duty.", 'evidence_summary': f"Room #{allocation.room_id}"})
 
         # -------------------------------------------------------------
         # Rule 1: UNREGISTERED EXAMINEES

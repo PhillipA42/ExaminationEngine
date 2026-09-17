@@ -13,13 +13,20 @@ from .reconciliation_serializers import (
 from .reconciliation import ExamReconciliationEngine
 
 
+class IsExamOfficerOrAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated: return False
+        roles = set(request.user.user_roles.filter(status='ACTIVE').values_list('role__name', flat=True)) if hasattr(request.user, 'user_roles') else set()
+        return request.user.is_superuser or bool(roles & {'EXAM_OFFICER', 'ADMIN'})
+
+
 class StudentMarkViewSet(viewsets.ModelViewSet):
     """
     CRUD API for Student Marks submitted by lecturers.
     """
     queryset = StudentMark.objects.all().select_related('student__user', 'examination__unit')
     serializer_class = StudentMarkSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsExamOfficerOrAdmin]
 
     def perform_create(self, serializer):
         lecturer = getattr(self.request.user, 'lecturer_profile', None)
@@ -34,7 +41,7 @@ class ReconciliationReportViewSet(viewsets.ReadOnlyModelViewSet):
         'examination__unit', 'examination__period'
     ).prefetch_related('anomalies__student__user')
     serializer_class = ReconciliationReportSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsExamOfficerOrAdmin]
 
 
 class TriggerReconciliationAPIView(APIView):
