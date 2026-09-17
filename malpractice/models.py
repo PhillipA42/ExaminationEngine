@@ -29,6 +29,9 @@ class MalpracticeCase(models.Model):
     description = models.TextField()
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES, default='MEDIUM')
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='REPORTED')
+    reviewed_by = models.ForeignKey(Lecturer, null=True, blank=True, on_delete=models.SET_NULL, related_name='reviewed_malpractice_cases')
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    determination = models.TextField(blank=True)
     
     reported_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -40,7 +43,20 @@ class MalpracticeEvidence(models.Model):
     case = models.ForeignKey(MalpracticeCase, on_delete=models.CASCADE, related_name='evidence_files')
     file = models.FileField(upload_to='malpractice_evidence/%Y/%m/%d/')
     description = models.CharField(max_length=255, blank=True, null=True)
+    uploaded_by = models.ForeignKey(Lecturer, null=True, on_delete=models.SET_NULL, related_name='uploaded_malpractice_evidence')
+    checksum = models.CharField(max_length=64, editable=False, db_index=True, default='')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Evidence for Case #{self.case.case_number}"
+
+
+class MalpracticeAudit(models.Model):
+    case = models.ForeignKey(MalpracticeCase, on_delete=models.CASCADE, related_name='audit_events')
+    actor = models.ForeignKey(Lecturer, null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=50)
+    details = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']

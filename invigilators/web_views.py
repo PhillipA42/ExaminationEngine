@@ -474,6 +474,9 @@ def file_malpractice_report(request, duty_id):
 
     student = get_object_or_404(Student, id=student_id)
     room = get_object_or_404(Room, id=room_id)
+    if room.id != duty.room_id or not StudentExamAllocation.objects.filter(examination=duty.examination, room=duty.room, student=student).exists():
+        messages.error(request, "The selected student must belong to your assigned examination room.")
+        return redirect('session_roster', duty_id=duty.id)
 
     # Generate unique case number
     count = MalpracticeCase.objects.count() + 1
