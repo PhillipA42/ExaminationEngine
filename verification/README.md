@@ -1,6 +1,6 @@
 # System verification (Module 7)
 
-Module 7 is a read-only assurance layer over Modules 1--6.  It persists each run and its individual checks in `SystemVerificationReport` and `VerificationCheck`; it never repairs, deletes, reallocates, or resolves source records.
+Module 7 is a read-only assurance layer over Modules 1--8. It persists each run and its individual checks in `SystemVerificationReport` and `VerificationCheck`; it never repairs, deletes, reallocates, publishes, or resolves source records.
 
 Run it from Windows PowerShell:
 
@@ -11,7 +11,7 @@ python manage.py reconcile_exams
 python manage.py test
 ```
 
-Checks are grouped into database, academic structure, locations, authentication/identity, scheduling, room and student allocation, invigilation, attendance, booklets, and malpractice relationships.  Timetable validation delegates to `scheduling.services.ExamConstraintChecker`, the established M2 constraint engine.  Reconciliation remains the separate M6 `reconcile_exams` command.
+Checks are grouped into database, academic structure, locations, authentication/identity, scheduling, room and student allocation, invigilation, attendance, booklets, malpractice relationships, reconciliation, and results workflow integrity. Timetable validation delegates to `scheduling.services.ExamConstraintChecker`, the established M2 constraint engine. Reconciliation remains the separate M6 `reconcile_exams` command.
 
 `PASS` means the required invariant holds; `FAIL` means it does not; `WARNING` calls out an intentionally non-fatal condition (such as an administrative-only account); and `SKIPPED` means a check cannot apply.  A report is `FAILED` for any failure, `PASSED_WITH_WARNINGS` for warnings only, and otherwise `PASSED`.
 

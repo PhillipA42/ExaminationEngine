@@ -363,3 +363,22 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertContains(resp2, "CSC401")
         self.assertContains(resp2, "Software Architecture")
         self.assertContains(resp2, "60.00")
+
+    def test_non_owner_cannot_edit_submission_through_service(self):
+        submission = ResultWorkflowService.get_or_create_submission(self.exam_cs, self.lecturer_cs)
+        with self.assertRaises(ValidationError) as ctx:
+            ResultWorkflowService.save_manual_marks(submission, self.user_cod_cs, [
+                {'student_id': self.student1.id, 'coursework_mark': 20, 'exam_mark': 40},
+            ])
+        self.assertIn('only the assigned lecturer', str(ctx.exception))
+
+    def test_direct_api_patch_cannot_bypass_workflow(self):
+        submission = ResultWorkflowService.get_or_create_submission(self.exam_cs, self.lecturer_cs)
+        self.client.force_login(self.user_lec)
+        response = self.client.patch(
+            f'/api/academics/submissions/{submission.id}/',
+            data='{"status": "PUBLISHED"}', content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 405)
+        submission.refresh_from_db()
+        self.assertEqual(submission.status, 'DRAFT')

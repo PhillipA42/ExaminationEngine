@@ -28,6 +28,7 @@ class BulkMarkUploadService:
         Parses and validates an uploaded mark file (CSV or XLSX).
         Returns a dict: {'success': bool, 'errors': list, 'processed_count': int, 'preview': list}
         """
+        ResultWorkflowService._assert_submission_editor(actor, submission)
         filename = file_obj.name.lower()
         if filename.endswith('.csv'):
             rows = cls._parse_csv(file_obj)
@@ -308,6 +309,10 @@ class ResultWorkflowService:
         """
         Retrieves or initializes a ResultSubmission for an examination and assigned lecturer.
         """
+        if not lecturer:
+            raise ValidationError("A lecturer profile is required to manage results.")
+        if lecturer.department_id != examination.unit.course.department_id:
+            raise ValidationError("Permission Denied: lecturer is not authorized for this examination's department.")
         period = examination.period
         unit = examination.unit
         department = unit.course.department
@@ -342,6 +347,7 @@ class ResultWorkflowService:
         Saves or updates manual draft marks entered by the lecturer.
         marks_payload: list of dicts [{'student_id': 1, 'coursework_mark': 25, 'exam_mark': 50}]
         """
+        cls._assert_submission_editor(actor, submission)
         if submission.status not in ['DRAFT', 'COD_REJECTED', 'DEAN_REJECTED', 'FINAL_REJECTED']:
             raise ValidationError(f"Marks cannot be edited while in '{submission.get_status_display()}' status.")
 
@@ -361,7 +367,7 @@ class ResultWorkflowService:
             for item in marks_payload:
                 student_id = item.get('student_id')
                 if student_id not in valid_student_ids:
-                    continue
+                    raise ValidationError(f"Student ID {student_id} is not registered for this examination unit.")
 
                 cat_val = Decimal(str(item.get('coursework_mark', 0) or 0))
                 exam_val = Decimal(str(item.get('exam_mark', 0) or 0))
@@ -402,6 +408,7 @@ class ResultWorkflowService:
         Submits marks from Lecturer to COD.
         Executes reconciliation engine; blocks if critical anomalies exist.
         """
+        cls._assert_submission_editor(actor, submission)
         allowed_statuses = ['DRAFT', 'COD_REJECTED', 'DEAN_REJECTED', 'FINAL_REJECTED']
         if submission.status not in allowed_statuses:
             raise ValidationError(f"Cannot submit results from current status: {submission.get_status_display()}")
@@ -635,6 +642,15 @@ class ResultWorkflowService:
             if Role.ADMIN in user_roles:
                 return True
         return False
+
+    @classmethod
+    def _assert_submission_editor(cls, user, submission):
+        """Server-side ownership guard shared by API, web views and direct callers."""
+        if user.is_superuser:
+            return
+        lecturer = getattr(user, 'lecturer_profile', None)
+        if not lecturer or lecturer.id != submission.lecturer_id:
+            raise ValidationError("Permission Denied: only the assigned lecturer may edit or submit these results.")
 
     @classmethod
     def _is_dean_of_school(cls, user, school):

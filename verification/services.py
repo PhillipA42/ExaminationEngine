@@ -7,7 +7,8 @@ from django.db import connection, transaction
 from django.db.models import Count, F, Q
 from django.utils import timezone
 
-from academics.models import Course, Department, ReconciliationReport, School, Student, Unit, UnitRegistration
+from academics.models import (Course, Department, ReconciliationReport, ResultSubmission,
+                              School, Student, StudentMark, Unit, UnitRegistration)
 from authentication.models import User
 from invigilators.models import ExamAttendance, InvigilatorDuty
 from locations.models import Room
@@ -113,9 +114,33 @@ class VerificationRunner:
         inconsistent = sum(report.total_anomalies != report.anomalies.count() for report in ReconciliationReport.objects.prefetch_related('anomalies'))
         self.check('RECONCILIATION', 'REPORT_TOTALS', 'M6 report totals match persisted anomalies', inconsistent == 0, expected=0, actual=inconsistent)
 
+    def _results(self):
+        """M8 invariants; validation and transitions remain in ResultWorkflowService."""
+        invalid_marks = StudentMark.objects.filter(
+            Q(coursework_mark__lt=0) | Q(coursework_mark__gt=40) |
+            Q(exam_mark__lt=0) | Q(exam_mark__gt=70) | Q(total_mark__lt=0) | Q(total_mark__gt=100)
+        ).count()
+        self.check('RESULTS', 'MARK_RANGE', 'Stored result marks are within configured bounds', invalid_marks == 0, expected=0, actual=invalid_marks)
+        unregistered = StudentMark.objects.exclude(
+            student__unit_registrations__unit=F('examination__unit'),
+            student__unit_registrations__academic_year=F('examination__period__academic_year'),
+            student__unit_registrations__semester=F('examination__period__semester'),
+            student__unit_registrations__registration_status='REGISTERED',
+        ).count()
+        self.check('RESULTS', 'MARK_REGISTRATION_CHAIN', 'Marks have an authoritative registration', unregistered == 0, expected=0, actual=unregistered)
+        context_errors = ResultSubmission.objects.exclude(unit=F('examination__unit')).count()
+        context_errors += ResultSubmission.objects.exclude(department=F('examination__unit__course__department')).count()
+        context_errors += ResultSubmission.objects.exclude(school=F('examination__unit__course__department__school')).count()
+        self.check('RESULTS', 'SUBMISSION_CONTEXT', 'Result submissions match examination academic context', context_errors == 0, expected=0, actual=context_errors)
+        published = ResultSubmission.objects.filter(status='PUBLISHED')
+        bypassed = published.filter(Q(cod_reviewed_by__isnull=True) | Q(dean_reviewed_by__isnull=True) | Q(published_by__isnull=True)).count()
+        self.check('RESULTS', 'PUBLICATION_APPROVAL_CHAIN', 'Published results retain required approvals', bypassed == 0, expected=0, actual=bypassed, severity='CRITICAL')
+        stale_marks = StudentMark.objects.filter(status='PUBLISHED').exclude(submission__status='PUBLISHED').count()
+        self.check('RESULTS', 'PUBLISHED_MARK_STATE', 'Published marks belong to published submissions', stale_marks == 0, expected=0, actual=stale_marks, severity='CRITICAL')
+
     def run(self):
         report = SystemVerificationReport.objects.create(reference=f'VER-{uuid.uuid4().hex[:16].upper()}', initiated_by=self.user)
-        self._database(); self._structure(); self._identity_and_allocation(); self._operations(); self._scheduling(); self._reconciliation()
+        self._database(); self._structure(); self._identity_and_allocation(); self._operations(); self._scheduling(); self._reconciliation(); self._results()
         VerificationCheck.objects.bulk_create([VerificationCheck(report=report, **row) for row in self.results])
         counts = {s: sum(row['status'] == s for row in self.results) for s in ('PASS', 'FAIL', 'WARNING', 'SKIPPED')}
         report.total_checks = len(self.results); report.passed_checks = counts['PASS']; report.failed_checks = counts['FAIL']; report.warnings = counts['WARNING']; report.skipped_checks = counts['SKIPPED']

@@ -163,7 +163,8 @@ def lecturer_mark_entry(request, examination_id):
 
     examination = get_object_or_404(
         Examination.objects.select_related('unit__course__department__school', 'period'),
-        id=examination_id
+        id=examination_id,
+        unit__course__department=lecturer.department,
     )
 
     submission = ResultWorkflowService.get_or_create_submission(examination, lecturer)
@@ -219,7 +220,8 @@ def lecturer_bulk_upload(request, examination_id):
 
     examination = get_object_or_404(
         Examination.objects.select_related('unit', 'period'),
-        id=examination_id
+        id=examination_id,
+        unit__course__department=lecturer.department,
     )
     submission = ResultWorkflowService.get_or_create_submission(examination, lecturer)
 
@@ -247,7 +249,10 @@ def lecturer_bulk_upload(request, examination_id):
 @lecturer_required
 def download_sample_csv(request, examination_id):
     """Generates and downloads a pre-populated CSV template with registered students."""
-    examination = get_object_or_404(Examination.objects.select_related('unit', 'period'), id=examination_id)
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    if not lecturer and request.user.is_superuser:
+        lecturer = Lecturer.objects.first()
+    examination = get_object_or_404(Examination.objects.select_related('unit', 'period'), id=examination_id, unit__course__department=lecturer.department)
     registrations = UnitRegistration.objects.filter(
         unit=examination.unit,
         academic_year=examination.period.academic_year,
@@ -306,12 +311,12 @@ def cod_review_submission(request, submission_id):
     """
     COD detailed inspection view of a submission: marks, 3-way reconciliation audit, and approve/reject modal.
     """
-    submission = get_object_or_404(
-        ResultSubmission.objects.select_related(
+    submissions = ResultSubmission.objects.select_related(
             'unit', 'examination__period', 'lecturer__user', 'department', 'school'
-        ),
-        id=submission_id
-    )
+        )
+    if not request.user.is_superuser:
+        submissions = submissions.filter(department=request.user.lecturer_profile.department)
+    submission = get_object_or_404(submissions, id=submission_id)
 
     marks = StudentMark.objects.filter(examination=submission.examination).select_related('student__user')
     latest_report = ReconciliationReport.objects.filter(examination=submission.examination).order_by('-generated_at').first()
@@ -384,12 +389,12 @@ def dean_review_submission(request, submission_id):
     """
     Dean detailed review of a submission forwarded by COD.
     """
-    submission = get_object_or_404(
-        ResultSubmission.objects.select_related(
+    submissions = ResultSubmission.objects.select_related(
             'unit', 'examination__period', 'lecturer__user', 'department', 'school'
-        ),
-        id=submission_id
-    )
+        )
+    if not request.user.is_superuser:
+        submissions = submissions.filter(school=request.user.lecturer_profile.department.school)
+    submission = get_object_or_404(submissions, id=submission_id)
 
     marks = StudentMark.objects.filter(examination=submission.examination).select_related('student__user')
     latest_report = ReconciliationReport.objects.filter(examination=submission.examination).order_by('-generated_at').first()

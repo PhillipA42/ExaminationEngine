@@ -36,6 +36,18 @@ class ResultSubmissionViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated, IsLecturerOrOfficer]
 
+    def create(self, request, *args, **kwargs):
+        return Response({'error': 'Create result workspaces through the authorized lecturer workflow.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def update(self, request, *args, **kwargs):
+        return Response({'error': 'Workflow fields cannot be updated directly.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def partial_update(self, request, *args, **kwargs):
+        return Response({'error': 'Workflow fields cannot be updated directly.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({'error': 'Result submissions are retained for audit.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     def get_serializer_class(self):
         if self.action in ['retrieve', 'update', 'partial_update']:
             return ResultSubmissionDetailSerializer
