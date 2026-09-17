@@ -22,7 +22,8 @@
                             <span class="badge badge-soft-primary"><i class="bi bi-person-workspace me-1"></i>{{ lecturer.designation|default:"Lecturer" }}</span>
                             {% if user.is_dean %}
                             <span class="badge bg-info text-dark"><i class="bi bi-award me-1"></i>Dean</span>
-                            {% elif user.is_cod %}
+                            {% endif %}
+                            {% if user.is_cod %}
                             <span class="badge bg-primary text-white"><i class="bi bi-building me-1"></i>COD</span>
                             {% endif %}
                             <span>&bull;</span>
@@ -36,7 +37,20 @@
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i>My Teaching & Marks
+                    </a>
+                    {% if user.is_cod %}
+                    <a href="{% url 'cod_results_dashboard' %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-building me-1"></i>COD Review
+                    </a>
+                    {% endif %}
+                    {% if user.is_dean %}
+                    <a href="{% url 'dean_results_dashboard' %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-award me-1"></i>Dean Review
+                    </a>
+                    {% endif %}
                     <span class="badge bg-light text-dark border px-3 py-2">
                         <i class="bi bi-calendar3 me-1 text-primary"></i> Today: {{ today|date:"l, d M Y" }}
                     </span>

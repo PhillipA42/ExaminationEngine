@@ -203,12 +203,15 @@
                         <span class="badge bg-secondary bg-opacity-50 text-white font-monospace" style="font-size: 0.65rem;">
                             {{ user.lecturer_profile.staff_number }}
                         </span>
+                        <span class="badge bg-light text-dark" style="font-size: 0.65rem;">Lecturer</span>
+                        {% if user.is_cod %}
+                        <span class="badge bg-primary text-white" style="font-size: 0.65rem;">COD</span>
+                        {% endif %}
                         {% if user.is_dean %}
                         <span class="badge bg-info text-dark" style="font-size: 0.65rem;">Dean</span>
-                        {% elif user.is_cod %}
-                        <span class="badge bg-primary text-white" style="font-size: 0.65rem;">COD</span>
-                        {% else %}
-                        <span class="badge bg-light text-dark" style="font-size: 0.65rem;">Lecturer</span>
+                        {% endif %}
+                        {% if user.has_invigilation_duties %}
+                        <span class="badge bg-success text-white" style="font-size: 0.65rem;" title="Assigned to Invigilate Examination Rooms"><i class="bi bi-shield-shaded me-1"></i>Invigilator</span>
                         {% endif %}
                     </div>
                 </div>
@@ -221,6 +224,9 @@
                 <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" title="Assigned Invigilation Duties for Examination Rooms">
                     <i class="bi bi-clipboard-check"></i>
                     <span class="d-none d-sm-inline">Invigilation Duties</span>
+                    {% if user.has_invigilation_duties %}
+                    <span class="badge bg-success text-white rounded-pill px-1" style="font-size: 0.65rem;">{{ user.invigilation_duties_count }}</span>
+                    {% endif %}
                 </a>
 
                 {% if user.is_cod or user.is_dean or user.is_exam_officer or user.is_superuser %}

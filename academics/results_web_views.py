@@ -41,8 +41,7 @@ def cod_required(view_func):
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect(f"/invigilator/login/?next={request.path}")
-        roles = set(request.user.user_roles.values_list('role__name', flat=True)) if request.user.is_authenticated else set()
-        if not (request.user.is_superuser or Role.COD in roles or Role.ADMIN in roles):
+        if not request.user.is_cod:
             return HttpResponseForbidden("Access restricted: Chairman of Department (COD) authorization required.")
         return view_func(request, *args, **kwargs)
     return _wrapped
@@ -53,8 +52,7 @@ def dean_required(view_func):
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect(f"/invigilator/login/?next={request.path}")
-        roles = set(request.user.user_roles.values_list('role__name', flat=True)) if request.user.is_authenticated else set()
-        if not (request.user.is_superuser or Role.DEAN in roles or Role.ADMIN in roles):
+        if not request.user.is_dean:
             return HttpResponseForbidden("Access restricted: Dean of School authorization required.")
         return view_func(request, *args, **kwargs)
     return _wrapped
@@ -65,8 +63,7 @@ def exam_officer_required(view_func):
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect(f"/invigilator/login/?next={request.path}")
-        roles = set(request.user.user_roles.values_list('role__name', flat=True)) if request.user.is_authenticated else set()
-        if not (request.user.is_superuser or Role.EXAM_OFFICER in roles or Role.ADMIN in roles):
+        if not request.user.is_exam_officer:
             return HttpResponseForbidden("Access restricted: Examination Officer authorization required.")
         return view_func(request, *args, **kwargs)
     return _wrapped

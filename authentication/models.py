@@ -38,19 +38,31 @@ class User(AbstractUser):
 
     @property
     def is_cod(self):
-        return 'COD' in self.role_names or self.is_superuser
+        return 'COD' in self.role_names or 'ADMIN' in self.role_names or self.is_superuser
 
     @property
     def is_dean(self):
-        return 'DEAN' in self.role_names or self.is_superuser
+        return 'DEAN' in self.role_names or 'ADMIN' in self.role_names or self.is_superuser
 
     @property
     def is_exam_officer(self):
-        return 'EXAM_OFFICER' in self.role_names or self.is_superuser
+        return 'EXAM_OFFICER' in self.role_names or 'ADMIN' in self.role_names or self.is_superuser
 
     @property
     def is_lecturer(self):
         return hasattr(self, 'lecturer_profile')
+
+    @property
+    def has_invigilation_duties(self):
+        if hasattr(self, 'lecturer_profile'):
+            return self.lecturer_profile.duties.exists()
+        return False
+
+    @property
+    def invigilation_duties_count(self):
+        if hasattr(self, 'lecturer_profile'):
+            return self.lecturer_profile.duties.count()
+        return 0
 
 class Role(models.Model):
     ADMIN = 'ADMIN'
@@ -67,7 +79,7 @@ class Role(models.Model):
         (ACADEMIC_OFFICER, 'Academic Officer'),
         (DEAN, 'Dean of School'),
         (COD, 'Chairman of Department'),
-        (LECTURER, 'Lecturer / Invigilator'),
+        (LECTURER, 'Lecturer'),
         (STUDENT, 'Student'),
     ]
 
