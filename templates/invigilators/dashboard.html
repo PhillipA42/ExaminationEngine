@@ -20,6 +20,11 @@
                         <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
                             {% if lecturer %}
                             <span class="badge badge-soft-primary"><i class="bi bi-person-workspace me-1"></i>{{ lecturer.designation|default:"Lecturer" }}</span>
+                            {% if user.is_dean %}
+                            <span class="badge bg-info text-dark"><i class="bi bi-award me-1"></i>Dean</span>
+                            {% elif user.is_cod %}
+                            <span class="badge bg-primary text-white"><i class="bi bi-building me-1"></i>COD</span>
+                            {% endif %}
                             <span>&bull;</span>
                             <span><i class="bi bi-building me-1"></i>{{ lecturer.department.name }}</span>
                             <span>&bull;</span>
@@ -90,11 +95,14 @@
     <!-- Assigned Duty Cards Section -->
     <div class="col-12">
         <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-3">
-            <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-                <i class="bi bi-door-open-fill text-primary"></i>
-                <span>Assigned Examination Rooms</span>
-                <span class="badge bg-secondary rounded-pill font-monospace">{{ duties_list|length }}</span>
-            </h5>
+            <div>
+                <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                    <i class="bi bi-door-open-fill text-primary"></i>
+                    <span>Assigned Examination Rooms</span>
+                    <span class="badge bg-secondary rounded-pill font-monospace">{{ duties_list|length }}</span>
+                </h5>
+                <div class="text-muted small">Lecturers become invigilators when allocated by the Examination Office to supervise designated exam rooms.</div>
+            </div>
             
             <div class="btn-group btn-group-sm" role="group">
                 <button type="button" class="btn btn-outline-secondary active" onclick="filterDuties('all', this)">All</button>

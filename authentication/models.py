@@ -30,6 +30,28 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.email})"
 
+    @property
+    def role_names(self):
+        if not hasattr(self, '_role_names'):
+            self._role_names = set(self.user_roles.filter(status='ACTIVE').values_list('role__name', flat=True))
+        return self._role_names
+
+    @property
+    def is_cod(self):
+        return 'COD' in self.role_names or self.is_superuser
+
+    @property
+    def is_dean(self):
+        return 'DEAN' in self.role_names or self.is_superuser
+
+    @property
+    def is_exam_officer(self):
+        return 'EXAM_OFFICER' in self.role_names or self.is_superuser
+
+    @property
+    def is_lecturer(self):
+        return hasattr(self, 'lecturer_profile')
+
 class Role(models.Model):
     ADMIN = 'ADMIN'
     EXAM_OFFICER = 'EXAM_OFFICER'

@@ -121,7 +121,7 @@ def lecturer_results_dashboard(request):
 def lecturer_open_exam_attendance(request, examination_id):
     """
     Direct entry point for a lecturer to open attendance marking for a specific examination.
-    Finds or automatically links an InvigilatorDuty for the room session and directs to the attendance roster.
+    A lecturer becomes an invigilator for an exam only when assigned to a specific examination room.
     """
     lecturer = getattr(request.user, 'lecturer_profile', None)
     if not lecturer and request.user.is_superuser:
@@ -132,36 +132,26 @@ def lecturer_open_exam_attendance(request, examination_id):
         id=examination_id
     )
 
-    # 1. Check if duty already exists for this lecturer and exam
+    # 1. Check if the lecturer is assigned to an invigilation room duty for this exam
     duty = InvigilatorDuty.objects.filter(examination=examination, lecturer=lecturer).first()
     if duty:
         return redirect('session_roster', duty_id=duty.id)
 
-    # 2. Check if an allocated room exists for this exam
-    room_alloc = ExamRoomAllocation.objects.filter(examination=examination).select_related('room').first()
-    if room_alloc:
-        target_room = room_alloc.room
-    else:
-        existing_any_duty = InvigilatorDuty.objects.filter(examination=examination).select_related('room').first()
-        if existing_any_duty:
-            target_room = existing_any_duty.room
-        else:
-            target_room = Room.objects.first()
+    # 2. If user is COD, Dean, Exam Officer, or Superuser, permit supervisory room access
+    if request.user.is_superuser or request.user.is_cod or request.user.is_dean or request.user.is_exam_officer:
+        first_duty = InvigilatorDuty.objects.filter(examination=examination).first()
+        if first_duty:
+            messages.info(request, f"Viewing {examination.unit.code} attendance roster in supervisory capacity.")
+            return redirect('session_roster', duty_id=first_duty.id)
 
-    if not target_room:
-        messages.error(request, "No examination room is configured for attendance marking.")
-        return redirect('lecturer_results_dashboard')
-
-    duty, _ = InvigilatorDuty.objects.get_or_create(
-        examination=examination,
-        lecturer=lecturer,
-        defaults={
-            'room': target_room,
-            'role': 'CHIEF_INVIGILATOR',
-            'status': 'ASSIGNED',
-        }
+    # 3. Otherwise, the lecturer is not an invigilator for this exam room
+    messages.warning(
+        request,
+        f"You are not assigned as an invigilator for {examination.unit.code}. "
+        "Lecturers only take examination attendance when assigned to invigilate a specific examination room."
     )
-    return redirect('session_roster', duty_id=duty.id)
+    return redirect('lecturer_results_dashboard')
+
 
 
 

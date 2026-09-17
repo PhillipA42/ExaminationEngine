@@ -147,10 +147,10 @@
                 <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Student Portal</span>
             </a>
             {% elif user.is_authenticated and user.lecturer_profile %}
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'invigilator_dashboard' %}">
-                <i class="bi bi-shield-check text-primary fs-4"></i>
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'lecturer_results_dashboard' %}">
+                <i class="bi bi-mortarboard text-primary fs-4"></i>
                 <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
-                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Invigilator Portal</span>
+                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Faculty & Staff Portal</span>
             </a>
             {% else %}
             <a class="navbar-brand d-flex align-items-center gap-2" href="/">
@@ -193,38 +193,55 @@
                     <span class="d-none d-sm-inline">Logout</span>
                 </a>
 
-                <!-- Lecturer Navigation -->
+                <!-- Lecturer / Academic Staff Navigation -->
                 {% elif user.lecturer_profile %}
                 <div class="text-end d-none d-md-block text-white-50">
                     <div class="fw-semibold text-white small">
                         {{ user.get_full_name|default:user.username }}
                     </div>
-                    <span class="badge bg-secondary bg-opacity-50 text-white font-monospace" style="font-size: 0.7rem;">
-                        {{ user.lecturer_profile.staff_number }}
-                    </span>
+                    <div class="d-flex align-items-center gap-1 justify-content-end">
+                        <span class="badge bg-secondary bg-opacity-50 text-white font-monospace" style="font-size: 0.65rem;">
+                            {{ user.lecturer_profile.staff_number }}
+                        </span>
+                        {% if user.is_dean %}
+                        <span class="badge bg-info text-dark" style="font-size: 0.65rem;">Dean</span>
+                        {% elif user.is_cod %}
+                        <span class="badge bg-primary text-white" style="font-size: 0.65rem;">COD</span>
+                        {% else %}
+                        <span class="badge bg-light text-dark" style="font-size: 0.65rem;">Lecturer</span>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" title="Examination Rooms & Attendance Marking">
-                    <i class="bi bi-clipboard-check"></i>
-                    <span class="d-none d-sm-inline">Attendance</span>
-                </a>
-
-                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1">
+                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1" title="Enter Course Marks & Exam Results">
                     <i class="bi bi-file-earmark-spreadsheet"></i>
                     <span class="d-none d-sm-inline">Marks Entry</span>
                 </a>
 
+                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" title="Assigned Invigilation Duties for Examination Rooms">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span class="d-none d-sm-inline">Invigilation Duties</span>
+                </a>
+
+                {% if user.is_cod or user.is_dean or user.is_exam_officer or user.is_superuser %}
                 <div class="dropdown">
                     <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-check2-square"></i>
-                        <span class="d-none d-sm-inline">Workflows</span>
+                        <i class="bi bi-shield-lock"></i>
+                        <span class="d-none d-sm-inline">Approvals</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow">
-                        <li><a class="dropdown-item small" href="{% url 'cod_results_dashboard' %}"><i class="bi bi-building me-2 text-primary"></i>COD Review</a></li>
-                        <li><a class="dropdown-item small" href="{% url 'dean_results_dashboard' %}"><i class="bi bi-award me-2 text-info"></i>Dean Review</a></li>
+                        {% if user.is_cod or user.is_superuser %}
+                        <li><a class="dropdown-item small" href="{% url 'cod_results_dashboard' %}"><i class="bi bi-building me-2 text-primary"></i>COD Departmental Review</a></li>
+                        {% endif %}
+                        {% if user.is_dean or user.is_superuser %}
+                        <li><a class="dropdown-item small" href="{% url 'dean_results_dashboard' %}"><i class="bi bi-award me-2 text-info"></i>Dean Faculty Review</a></li>
+                        {% endif %}
+                        {% if user.is_exam_officer or user.is_superuser %}
                         <li><a class="dropdown-item small" href="{% url 'officer_results_dashboard' %}"><i class="bi bi-shield-check me-2 text-success"></i>Exam Authority Publication</a></li>
+                        {% endif %}
                     </ul>
                 </div>
+                {% endif %}
 
                 <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
                     <i class="bi bi-box-arrow-right"></i>

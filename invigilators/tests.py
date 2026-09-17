@@ -87,18 +87,28 @@ class AttendanceMarkingWorkflowTests(TestCase):
             )
             self.students.append(s)
 
-    def test_lecturer_open_exam_attendance_auto_provisions_duty(self):
-        """Lecturer opening attendance marking for their exam automatically provisions duty and redirects."""
+    def test_lecturer_open_exam_attendance_when_assigned(self):
+        """Lecturer assigned to invigilate an exam room is redirected directly to the session roster."""
+        duty = InvigilatorDuty.objects.create(
+            examination=self.examination,
+            lecturer=self.lecturer,
+            room=self.room
+        )
         self.client.login(username='lecturer_cve', password='Password123!')
         url = f'/results/lecturer/attendance/{self.examination.id}/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
-
-        # Duty should now exist
-        duty = InvigilatorDuty.objects.filter(examination=self.examination, lecturer=self.lecturer).first()
-        self.assertIsNotNone(duty)
-        self.assertEqual(duty.room, self.room)
         self.assertIn(f'/invigilator/session/{duty.id}/', response.url)
+
+    def test_lecturer_open_exam_attendance_when_not_assigned_shows_warning(self):
+        """Lecturer who is not assigned to invigilate an exam room receives a clear warning."""
+        self.client.login(username='lecturer_cve', password='Password123!')
+        url = f'/results/lecturer/attendance/{self.examination.id}/'
+        response = self.client.get(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        messages_text = [m.message for m in response.context['messages']]
+        self.assertTrue(any("You are not assigned as an invigilator" in m for m in messages_text))
+
 
     def test_single_checkin_with_booklet_serial(self):
         """Single check-in saves the physical booklet serial number and marks student present."""
