@@ -14,6 +14,7 @@ class InvigilatorDuty(models.Model):
 
     class Meta:
         unique_together = ('examination', 'lecturer')
+        indexes = [models.Index(fields=['room', 'examination'], name='invigilator_room_id_1b9e6f_idx')]
 
     def __str__(self):
         return f"{self.lecturer.user.get_full_name()} -> {self.examination.unit.code} ({self.room.name})"
@@ -32,6 +33,31 @@ class ExamAttendance(models.Model):
 
     class Meta:
         unique_together = ('examination', 'student')
+        indexes = [models.Index(fields=['examination', 'room', 'student'], name='invigilator_examina_8b111d_idx')]
 
     def __str__(self):
         return f"{self.student.registration_number} - Booklet #{self.booklet_serial_number}"
+
+
+class ExaminationSession(models.Model):
+    """Operational state for one authoritative M2 examination-room allocation."""
+    examination = models.ForeignKey(Examination, on_delete=models.CASCADE, related_name='hall_sessions')
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='exam_sessions')
+    status = models.CharField(max_length=20, default='OPEN', choices=[('OPEN', 'Open'), ('COMPLETED', 'Completed')])
+    opened_by = models.ForeignKey(Lecturer, null=True, on_delete=models.SET_NULL, related_name='opened_exam_sessions')
+    opened_at = models.DateTimeField(auto_now_add=True)
+    closed_by = models.ForeignKey(Lecturer, null=True, blank=True, on_delete=models.SET_NULL, related_name='closed_exam_sessions')
+    closed_at = models.DateTimeField(null=True, blank=True)
+    closure_reason = models.TextField(blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['examination', 'room'], name='unique_exam_room_session')]
+
+
+class InvigilationAudit(models.Model):
+    duty = models.ForeignKey(InvigilatorDuty, null=True, blank=True, on_delete=models.SET_NULL, related_name='audit_events')
+    attendance = models.ForeignKey(ExamAttendance, null=True, blank=True, on_delete=models.SET_NULL, related_name='audit_events')
+    actor = models.ForeignKey(Lecturer, null=True, on_delete=models.SET_NULL, related_name='invigilation_audit_events')
+    action = models.CharField(max_length=50)
+    details = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)

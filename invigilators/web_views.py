@@ -15,6 +15,7 @@ from locations.models import Room
 from scheduling.models import StudentExamAllocation, ExamSchedule, ExamRoomAllocation
 from malpractice.models import MalpracticeCase, MalpracticeEvidence
 from .models import InvigilatorDuty, ExamAttendance
+from .services import InvigilationService
 
 
 def lecturer_required(view_func):
@@ -287,6 +288,9 @@ def student_checkin(request, duty_id):
     else:
         duty = get_object_or_404(InvigilatorDuty, id=duty_id)
 
+    if not InvigilationService.is_active(duty):
+        return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
+
     # Determine if request is JSON or Form data
     is_json = request.content_type == 'application/json'
     if is_json:
@@ -310,6 +314,9 @@ def student_checkin(request, duty_id):
         return redirect('session_roster', duty_id=duty.id)
 
     student = get_object_or_404(Student, id=student_id)
+    if not StudentExamAllocation.objects.filter(examination=duty.examination, room=duty.room, student=student).exists():
+        msg = 'Student is not allocated to this examination room.'
+        return JsonResponse({'success': False, 'message': msg}, status=403) if is_json else HttpResponseForbidden(msg)
 
     # ── Milestone 9: Eligibility Gate ─────────────────────────────────────
     # Only check eligibility when marking a student PRESENT.
@@ -536,6 +543,9 @@ def batch_student_checkin(request, duty_id):
     else:
         duty = get_object_or_404(InvigilatorDuty, id=duty_id)
 
+    if not InvigilationService.is_active(duty):
+        return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
+
     try:
         payload = json.loads(request.body.decode('utf-8'))
         records = payload.get('records', []) if isinstance(payload, dict) else payload
@@ -566,6 +576,9 @@ def batch_student_checkin(request, duty_id):
                 student = Student.objects.get(id=student_id)
             except Student.DoesNotExist:
                 errors.append(f"Student ID {student_id} not found.")
+                continue
+            if not StudentExamAllocation.objects.filter(examination=duty.examination, room=duty.room, student=student).exists():
+                errors.append(f"{student.registration_number}: not allocated to this examination room.")
                 continue
 
             # If present and no booklet serial number
@@ -636,4 +649,3 @@ def batch_student_checkin(request, duty_id):
             'percent': checkin_percent
         }
     })
-

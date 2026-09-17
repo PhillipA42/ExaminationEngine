@@ -1,0 +1,11 @@
+from django.db import migrations, models
+import django.db.models.deletion
+
+class Migration(migrations.Migration):
+    dependencies=[('invigilators','0001_initial')]
+    operations=[
+      migrations.AddIndex(model_name='invigilatorduty', index=models.Index(fields=['room','examination'], name='inv_duty_room_exam_idx')),
+      migrations.AddIndex(model_name='examattendance', index=models.Index(fields=['examination','room','student'], name='inv_att_exam_room_st_idx')),
+      migrations.CreateModel(name='ExaminationSession', fields=[('id',models.BigAutoField(auto_created=True,primary_key=True,serialize=False,verbose_name='ID')),('status',models.CharField(choices=[('OPEN','Open'),('COMPLETED','Completed')],default='OPEN',max_length=20)),('opened_at',models.DateTimeField(auto_now_add=True)),('closed_at',models.DateTimeField(blank=True,null=True)),('closure_reason',models.TextField(blank=True)),('examination',models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,related_name='hall_sessions',to='scheduling.examination')),('room',models.ForeignKey(on_delete=django.db.models.deletion.CASCADE,related_name='exam_sessions',to='locations.room')),('opened_by',models.ForeignKey(null=True,on_delete=django.db.models.deletion.SET_NULL,related_name='opened_exam_sessions',to='academics.lecturer')),('closed_by',models.ForeignKey(blank=True,null=True,on_delete=django.db.models.deletion.SET_NULL,related_name='closed_exam_sessions',to='academics.lecturer'))], options={'constraints':[models.UniqueConstraint(fields=('examination','room'),name='unique_exam_room_session')]}),
+      migrations.CreateModel(name='InvigilationAudit', fields=[('id',models.BigAutoField(auto_created=True,primary_key=True,serialize=False,verbose_name='ID')),('action',models.CharField(max_length=50)),('details',models.JSONField(default=dict)),('created_at',models.DateTimeField(auto_now_add=True)),('actor',models.ForeignKey(null=True,on_delete=django.db.models.deletion.SET_NULL,related_name='invigilation_audit_events',to='academics.lecturer')),('attendance',models.ForeignKey(blank=True,null=True,on_delete=django.db.models.deletion.SET_NULL,related_name='audit_events',to='invigilators.examattendance')),('duty',models.ForeignKey(blank=True,null=True,on_delete=django.db.models.deletion.SET_NULL,related_name='audit_events',to='invigilators.invigilatorduty'))]),
+    ]
