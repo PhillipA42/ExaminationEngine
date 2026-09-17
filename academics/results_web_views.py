@@ -16,7 +16,9 @@ from academics.models import (
 )
 from academics.reconciliation import ExamReconciliationEngine
 from academics.results_services import BulkMarkUploadService, ResultWorkflowService
-from scheduling.models import Examination, ExaminationPeriod
+from scheduling.models import Examination, ExaminationPeriod, ExamRoomAllocation
+from locations.models import Room
+from invigilators.models import InvigilatorDuty, ExamAttendance
 from authentication.models import Role
 
 
@@ -97,12 +99,14 @@ def lecturer_results_dashboard(request):
             registration_status='REGISTERED'
         ).count()
         marks_count = StudentMark.objects.filter(examination=exam).count()
+        attendance_count = ExamAttendance.objects.filter(examination=exam, is_present=True).count()
 
         exam_cards.append({
             'examination': exam,
             'submission': submission,
             'registered_count': registered_count,
             'marks_count': marks_count,
+            'attendance_count': attendance_count,
             'status': submission.status if submission else 'NOT_STARTED',
             'status_display': submission.get_status_display() if submission else 'Not Started',
         })
@@ -111,6 +115,54 @@ def lecturer_results_dashboard(request):
         'lecturer': lecturer,
         'exam_cards': exam_cards,
     })
+
+
+@lecturer_required
+def lecturer_open_exam_attendance(request, examination_id):
+    """
+    Direct entry point for a lecturer to open attendance marking for a specific examination.
+    Finds or automatically links an InvigilatorDuty for the room session and directs to the attendance roster.
+    """
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    if not lecturer and request.user.is_superuser:
+        lecturer = Lecturer.objects.first()
+
+    examination = get_object_or_404(
+        Examination.objects.select_related('unit__course__department', 'period'),
+        id=examination_id
+    )
+
+    # 1. Check if duty already exists for this lecturer and exam
+    duty = InvigilatorDuty.objects.filter(examination=examination, lecturer=lecturer).first()
+    if duty:
+        return redirect('session_roster', duty_id=duty.id)
+
+    # 2. Check if an allocated room exists for this exam
+    room_alloc = ExamRoomAllocation.objects.filter(examination=examination).select_related('room').first()
+    if room_alloc:
+        target_room = room_alloc.room
+    else:
+        existing_any_duty = InvigilatorDuty.objects.filter(examination=examination).select_related('room').first()
+        if existing_any_duty:
+            target_room = existing_any_duty.room
+        else:
+            target_room = Room.objects.first()
+
+    if not target_room:
+        messages.error(request, "No examination room is configured for attendance marking.")
+        return redirect('lecturer_results_dashboard')
+
+    duty, _ = InvigilatorDuty.objects.get_or_create(
+        examination=examination,
+        lecturer=lecturer,
+        defaults={
+            'room': target_room,
+            'role': 'CHIEF_INVIGILATOR',
+            'status': 'ASSIGNED',
+        }
+    )
+    return redirect('session_roster', duty_id=duty.id)
+
 
 
 @lecturer_required

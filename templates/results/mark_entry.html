@@ -21,6 +21,9 @@
             <span class="badge bg-light text-dark border p-2">
                 Status: <strong>{{ submission.get_status_display }}</strong>
             </span>
+            <a href="{% url 'lecturer_open_exam_attendance' examination_id=examination.id %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-clipboard-check me-1"></i>Mark Attendance
+            </a>
             <a href="{% url 'lecturer_bulk_upload' examination_id=examination.id %}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-cloud-arrow-up-fill me-1"></i>Bulk Upload
             </a>

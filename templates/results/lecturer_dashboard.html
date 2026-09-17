@@ -48,23 +48,31 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="row g-3 mb-3 text-center">
-                    <div class="col-4">
+                <div class="row g-2 mb-3 text-center">
+                    <div class="col-3">
                         <div class="p-2 border rounded bg-light">
-                            <small class="text-muted d-block">Academic Year</small>
-                            <span class="fw-semibold">{{ item.examination.period.academic_year }}</span>
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Academic Year</small>
+                            <span class="fw-semibold small font-monospace">{{ item.examination.period.academic_year }}</span>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="p-2 border rounded bg-light">
-                            <small class="text-muted d-block">Registered</small>
-                            <span class="fw-bold text-primary">{{ item.registered_count }} Students</span>
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Registered</small>
+                            <span class="fw-bold text-primary small font-monospace">{{ item.registered_count }}</span>
                         </div>
                     </div>
-                    <div class="col-4">
+                    <div class="col-3">
                         <div class="p-2 border rounded bg-light">
-                            <small class="text-muted d-block">Marks Captured</small>
-                            <span class="fw-bold {% if item.marks_count == item.registered_count %}text-success{% else %}text-warning{% endif %}">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Attendance</small>
+                            <span class="fw-bold {% if item.attendance_count == item.registered_count and item.registered_count > 0 %}text-success{% elif item.attendance_count > 0 %}text-info{% else %}text-muted{% endif %} small font-monospace">
+                                {{ item.attendance_count }}/{{ item.registered_count }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="p-2 border rounded bg-light">
+                            <small class="text-muted d-block" style="font-size: 0.72rem;">Marks Entered</small>
+                            <span class="fw-bold {% if item.marks_count == item.registered_count and item.registered_count > 0 %}text-success{% else %}text-warning{% endif %} small font-monospace">
                                 {{ item.marks_count }}/{{ item.registered_count }}
                             </span>
                         </div>
@@ -80,11 +88,14 @@
                 </div>
                 {% endif %}
             </div>
-            <div class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center">
+            <div class="card-footer bg-white border-top py-3 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
                 <small class="text-muted">
                     Exam Type: <span class="fw-semibold">{{ item.examination.examination_type }}</span>
                 </small>
-                <div class="d-flex gap-2">
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'lecturer_open_exam_attendance' examination_id=item.examination.id %}" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1 shadow-sm">
+                        <i class="bi bi-clipboard-check-fill"></i> Attendance Marking
+                    </a>
                     <a href="{% url 'lecturer_mark_entry' examination_id=item.examination.id %}" class="btn btn-sm btn-primary-custom d-flex align-items-center gap-1">
                         <i class="bi bi-pencil-fill"></i> Enter Marks
                     </a>

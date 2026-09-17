@@ -4,6 +4,7 @@ from . import results_web_views
 urlpatterns = [
     # Lecturer Workflows
     path('lecturer/', results_web_views.lecturer_results_dashboard, name='lecturer_results_dashboard'),
+    path('lecturer/attendance/<int:examination_id>/', results_web_views.lecturer_open_exam_attendance, name='lecturer_open_exam_attendance'),
     path('lecturer/entry/<int:examination_id>/', results_web_views.lecturer_mark_entry, name='lecturer_mark_entry'),
     path('lecturer/upload/<int:examination_id>/', results_web_views.lecturer_bulk_upload, name='lecturer_bulk_upload'),
     path('lecturer/template/<int:examination_id>/', results_web_views.download_sample_csv, name='download_sample_csv'),

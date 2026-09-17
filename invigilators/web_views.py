@@ -521,3 +521,119 @@ def file_malpractice_report(request, duty_id):
             return JsonResponse({'success': False, 'message': err_msg}, status=500)
         messages.error(request, err_msg)
         return redirect('session_roster', duty_id=duty.id)
+
+
+@lecturer_required
+@require_POST
+def batch_student_checkin(request, duty_id):
+    """
+    Handles bulk/batch student attendance check-ins and booklet serial number updates.
+    Accepts a JSON payload: { "records": [ {"student_id": 1, "booklet_serial_number": "...", "is_present": true}, ... ] }
+    """
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    if lecturer:
+        duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
+    else:
+        duty = get_object_or_404(InvigilatorDuty, id=duty_id)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+        records = payload.get('records', []) if isinstance(payload, dict) else payload
+        if not isinstance(records, list):
+            return JsonResponse({'success': False, 'message': 'Records must be provided as a list.'}, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'message': 'Invalid JSON body.'}, status=400)
+
+    from academics.eligibility_services import EligibilityService
+    eligibility_svc = EligibilityService()
+    period = duty.examination.period
+
+    updated_count = 0
+    errors = []
+    seen_serials = set()
+
+    with transaction.atomic():
+        for rec in records:
+            student_id = rec.get('student_id')
+            booklet = (rec.get('booklet_serial_number') or '').strip()
+            is_present = rec.get('is_present', True) in [True, 'true', 'True', '1', 1]
+            remarks = (rec.get('remarks') or '').strip()
+
+            if not student_id:
+                continue
+
+            try:
+                student = Student.objects.get(id=student_id)
+            except Student.DoesNotExist:
+                errors.append(f"Student ID {student_id} not found.")
+                continue
+
+            # If present and no booklet serial number
+            if is_present and not booklet:
+                errors.append(f"{student.registration_number}: Booklet serial number is required when marked present.")
+                continue
+
+            # If absent, set absent placeholder if blank
+            if not is_present and not booklet:
+                booklet = f"ABSENT-EX{duty.examination_id}-ST{student.id}"
+
+            # Check duplicate within this batch
+            if is_present and booklet in seen_serials:
+                errors.append(f"{student.registration_number}: Duplicate booklet '{booklet}' detected in current batch.")
+                continue
+            if is_present:
+                seen_serials.add(booklet)
+
+            # Check duplicate in DB across other students
+            dup = ExamAttendance.objects.filter(booklet_serial_number=booklet).exclude(
+                examination=duty.examination,
+                student=student
+            ).first()
+            if dup:
+                errors.append(f"{student.registration_number}: Booklet '{booklet}' is already used by {dup.student.registration_number}.")
+                continue
+
+            # Milestone 9: Eligibility Check for Present students
+            if is_present:
+                try:
+                    eval_res = eligibility_svc.evaluate(student, period)
+                    if not eval_res.is_eligible and eval_res.overall_status == 'NOT_ELIGIBLE':
+                        errors.append(f"{student.registration_number} is NOT ELIGIBLE for examinations and was skipped.")
+                        continue
+                except Exception:
+                    pass
+
+            ExamAttendance.objects.update_or_create(
+                examination=duty.examination,
+                student=student,
+                defaults={
+                    'room': duty.room,
+                    'recorded_by': lecturer,
+                    'booklet_serial_number': booklet,
+                    'is_present': is_present,
+                    'remarks': remarks
+                }
+            )
+            updated_count += 1
+
+    # Recalculate stats
+    total_allocated = StudentExamAllocation.objects.filter(examination=duty.examination, room=duty.room).count()
+    checked_in_count = ExamAttendance.objects.filter(examination=duty.examination, room=duty.room, is_present=True).count()
+    absent_count = ExamAttendance.objects.filter(examination=duty.examination, room=duty.room, is_present=False).count()
+    pending_count = max(0, total_allocated - (checked_in_count + absent_count))
+    checkin_percent = int((checked_in_count / total_allocated * 100)) if total_allocated > 0 else 0
+
+    return JsonResponse({
+        'success': True,
+        'message': f"Updated attendance for {updated_count} student(s)." if not errors else f"Updated {updated_count} student(s) with {len(errors)} warning(s).",
+        'updated_count': updated_count,
+        'errors': errors,
+        'stats': {
+            'total': total_allocated,
+            'checked_in': checked_in_count,
+            'absent': absent_count,
+            'pending': pending_count,
+            'percent': checkin_percent
+        }
+    })
+
