@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Lecturer Profile{% endblock %}
+{% block lecturer_page_title %}Profile{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="hero-card d-flex flex-column flex-md-row align-items-md-center gap-3">
+            <div class="profile-avatar" style="width:64px;height:64px;border-radius:18px;font-size:1.4rem;background:linear-gradient(135deg,var(--ksu-soft),var(--ksu-pale));">
+                {{ lecturer.user.get_full_name|default:lecturer.user.username|slice:':1'|upper }}
+            </div>
+            <div>
+                <div class="page-kicker">Lecturer identity</div>
+                <h2 class="mb-1" style="font-weight:800;">{{ lecturer.user.get_full_name|default:lecturer.user.username }}</h2>
+                <p class="muted mb-0">Authoritative staff information and examination responsibilities.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-8">
+        <div class="section-card card-custom">
+            <div class="page-kicker">Staff record</div>
+            <h4 class="fw-bold mb-3">Academic profile</h4>
+            <div class="data-grid">
+                <div class="data-box"><div class="data-label">Staff number</div><div class="data-value">{{ lecturer.staff_number }}</div></div>
+                <div class="data-box"><div class="data-label">Email</div><div class="data-value">{{ lecturer.user.email|default:'Not provided' }}</div></div>
+                <div class="data-box"><div class="data-label">Department</div><div class="data-value">{{ lecturer.department.name }}</div></div>
+                <div class="data-box"><div class="data-label">School</div><div class="data-value">{{ lecturer.department.school.name }}</div></div>
+                <div class="data-box"><div class="data-label">Designation</div><div class="data-value">{{ lecturer.designation|default:'Lecturer' }}</div></div>
+                <div class="data-box"><div class="data-label">Account status</div><div class="data-value text-success">{{ lecturer.status|default:'ACTIVE' }}</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-4">
+        <div class="section-card card-custom h-100">
+            <div class="page-kicker">Access</div>
+            <h4 class="fw-bold mb-3">Authorized roles</h4>
+            <div class="summary-stack">
+                <div class="score-card"><span class="chip-status status-eligible"><i class="bi bi-person-badge"></i> Lecturer</span></div>
+                {% for role in user.user_roles.all %}
+                    {% if role.role.name != 'LECTURER' %}
+                    <div class="score-card"><span class="chip-status status-warning"><i class="bi bi-shield-check"></i> {{ role.role.name|title }}</span></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <p class="small muted mt-3 mb-0">Staff and academic records are managed by authorized university systems.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

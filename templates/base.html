@@ -4,317 +4,754 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Portal{% endblock %} - ExaminationEngine</title>
-    
-    <!-- Google Fonts: Inter -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap 5.3 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
+
     <style>
         :root {
-            --primary-navy: #0f172a;
-            --secondary-navy: #1e293b;
-            --accent-blue: #2563eb;
-            --accent-blue-hover: #1d4ed8;
-            --bg-canvas: #f8fafc;
-            --card-border: #e2e8f0;
-            --text-main: #1e293b;
-            --text-muted: #64748b;
+            --ksu-primary: #2f80ed;
+            --ksu-primary-dark: #1456a0;
+            --ksu-header: #66a9f2;
+            --ksu-secondary: #4f94e8;
+            --ksu-pale: #eaf4ff;
+            --ksu-soft: #dceeff;
+            --ksu-background: #f7fafd;
+            --ksu-border: #c9e0f7;
+            --ksu-white: #ffffff;
+            --ksu-text: #1f2937;
+            --ksu-muted: #64748b;
+            --ksu-success: #159570;
+            --ksu-warning: #e9a23b;
+            --ksu-danger: #dc3545;
+            --primary-navy: var(--ksu-primary-dark);
+            --primary-surface: var(--ksu-header);
+            --secondary-navy: var(--ksu-secondary);
+            --accent-blue: var(--ksu-primary);
+            --accent-blue-soft: var(--ksu-soft);
+            --bg-canvas: var(--ksu-background);
+            --panel-bg: var(--ksu-white);
+            --panel-alt: var(--ksu-pale);
+            --card-border: var(--ksu-border);
+            --text-main: var(--ksu-text);
+            --text-muted: var(--ksu-muted);
+            --success: var(--ksu-success);
+            --warning: var(--ksu-warning);
+            --danger: var(--ksu-danger);
+            --bs-primary: var(--ksu-primary);
+            --bs-primary-rgb: 47, 128, 237;
+            --bs-info: var(--ksu-secondary);
+            --bs-info-rgb: 79, 148, 232;
+            --bs-success: var(--ksu-success);
+            --bs-success-rgb: 21, 149, 112;
+            --bs-warning: var(--ksu-warning);
+            --bs-warning-rgb: 233, 162, 59;
+            --bs-danger: var(--ksu-danger);
+            --bs-danger-rgb: 220, 53, 69;
+            --bs-link-color: var(--ksu-primary-dark);
+            --bs-link-hover-color: var(--ksu-primary);
+            --shadow-soft: 0 10px 24px rgba(20, 86, 160, 0.08);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-canvas);
+            color: var(--text-main);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-canvas);
-            color: var(--text-main);
             min-height: 100vh;
+        }
+
+        a { text-decoration: none; }
+
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg-canvas);
+        }
+
+        .app-sidebar {
+            width: 260px;
+            background: var(--ksu-pale);
+            color: var(--ksu-primary-dark);
+            padding: 24px 16px 18px;
+            border-right: 1px solid var(--ksu-border);
             display: flex;
             flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
         }
 
-        /* Navbar Styling */
-        .navbar-custom {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        .brand-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 10px 20px;
+            border-bottom: 1px solid var(--ksu-border);
+            margin-bottom: 18px;
         }
 
-        .navbar-brand {
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ksu-soft);
+            color: var(--ksu-primary);
+            font-size: 1.2rem;
+        }
+
+        .brand-text {
             font-weight: 700;
-            font-size: 1.25rem;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.04em;
+            color: var(--ksu-primary-dark);
+            font-size: 1.05rem;
         }
 
-        .brand-badge {
+        .brand-text span { color: var(--ksu-primary); }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 12px;
+            border-radius: 12px;
+            color: var(--ksu-primary-dark);
+            font-weight: 500;
+            transition: 0.2s ease;
+        }
+
+        .nav-link-item:hover {
+            background: var(--ksu-soft);
+            color: var(--ksu-primary-dark);
+        }
+
+        .nav-link-item.active {
+            background: #d5eaff;
+            color: var(--ksu-primary-dark);
+            border: 1px solid var(--ksu-border);
+        }
+
+        .nav-link-item i {
+            width: 18px;
+            text-align: center;
+            font-size: 1.05rem;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid var(--ksu-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .app-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .topbar {
+            background: var(--ksu-header);
+            border-bottom: 1px solid var(--ksu-secondary);
+            height: 84px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .page-kicker {
+            color: var(--text-muted);
             font-size: 0.75rem;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
-            background: rgba(37, 99, 235, 0.25);
-            border: 1px solid rgba(147, 197, 253, 0.3);
-            color: #93c5fd;
+            font-weight: 700;
         }
 
-        /* Card Enhancements */
+        .page-title {
+            margin: 0;
+            font-size: clamp(1.3rem, 2vw, 2rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            color: var(--ksu-primary-dark);
+        }
+
+        .topbar .page-kicker,
+        .topbar .page-title,
+        .topbar .icon-button,
+        .topbar .profile-meta strong {
+            color: #ffffff;
+        }
+
+        .topbar .page-kicker,
+        .topbar .profile-meta small {
+            color: var(--ksu-pale);
+        }
+
+        .public-header {
+            background: var(--ksu-header);
+        }
+
+        .public-header .navbar-brand,
+        .public-header .navbar-brand:hover {
+            color: #ffffff;
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .icon-button {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: var(--panel-bg);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .topbar .icon-button {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.55);
+        }
+
+        .badge-dot {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #ef4444;
+            border: 2px solid #fff;
+        }
+
+        .profile-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 7px 10px 7px 7px;
+        }
+
+        .profile-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--ksu-soft), var(--ksu-pale));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+
+        .profile-meta small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+        }
+
+        .page-content {
+            padding: 28px 28px 36px;
+        }
+
         .card-custom {
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .card-soft {
+            background: var(--panel-alt);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+        }
+
+        .hero-card {
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--ksu-pale) 0%, #ffffff 100%);
+            border: 1px solid var(--ksu-soft);
+        }
+
+        .section-card {
+            padding: 22px;
+            border-radius: var(--radius-md);
+        }
+
+        .next-exam-panel {
+            background: linear-gradient(135deg, var(--ksu-primary-dark) 0%, var(--ksu-primary) 100%);
+            border: 0;
+            color: #fff;
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            padding: 7px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.18);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 700;
+        }
+
+        .chip-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .status-eligible { background: var(--ksu-success-bg, #e9f8f2); color: var(--success); border: 1px solid rgba(21,149,112,0.2); }
+        .status-warning { background: var(--ksu-warning-bg, #fff7e6); color: var(--warning); border: 1px solid rgba(233,162,59,0.3); }
+        .status-danger { background: var(--ksu-danger-bg, #fdecec); color: var(--danger); border: 1px solid rgba(220,53,69,0.2); }
+
+        .primary-btn, .secondary-btn, .ghost-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0.72rem 1.05rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .primary-btn {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        .primary-btn:hover { background: #246fcc; color: white; }
+
+        .secondary-btn {
+            background: var(--panel-bg);
+            border-color: var(--card-border);
+            color: var(--ksu-primary-dark);
+        }
+
+        .ghost-btn {
+            background: transparent;
+            color: var(--ksu-primary-dark);
+            border-color: var(--card-border);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .metric-card {
+            padding: 18px 18px 16px;
+            border-radius: 16px;
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            min-height: 120px;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+        }
+
+        .metric-value {
+            margin-top: 18px;
+            font-size: clamp(1.5rem, 2vw, 2.1rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -0.05em;
+        }
+
+        .list-plain {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .exam-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .exam-item:last-child { border-bottom: 0; }
+
+        .exam-unit {
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            margin-bottom: 2px;
+        }
+
+        .exam-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        .exam-meta {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .quick-action {
+            background: var(--panel-alt);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: var(--text-main);
+            transition: 0.2s ease;
+        }
+
+        .quick-action:hover {
+            transform: translateY(-1px);
+            background: var(--ksu-soft);
+        }
+
+        .quick-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ksu-soft);
+            color: var(--accent-blue);
+            font-size: 1.05rem;
+        }
+
+        .action-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            background: var(--panel-bg);
+            padding: 14px 16px;
+        }
+
+        .muted { color: var(--text-muted); }
+        .fw-700 { font-weight: 700; }
+
+        .empty-state {
+            background: var(--ksu-pale);
+            border: 1px dashed var(--ksu-border);
+            border-radius: 18px;
+            padding: 42px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .summary-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .score-card {
+            padding: 18px 18px 14px;
+            border-radius: 14px;
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .data-box {
+            background: var(--panel-alt);
             border: 1px solid var(--card-border);
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            padding: 12px 14px;
         }
 
-        .card-custom-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        .data-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
         }
 
-        /* Buttons & Forms */
+        .data-value {
+            margin-top: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
         .btn-primary-custom {
-            background-color: var(--accent-blue);
-            border-color: var(--accent-blue);
-            color: #ffffff;
-            font-weight: 500;
-            border-radius: 8px;
-            transition: all 0.2s ease;
+            background: var(--ksu-primary);
+            border: 1px solid var(--ksu-primary);
+            color: #fff;
         }
 
-        .btn-primary-custom:hover {
-            background-color: var(--accent-blue-hover);
-            border-color: var(--accent-blue-hover);
-            color: #ffffff;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        .btn-primary-custom:hover,
+        .btn-primary-custom:focus {
+            background: #246fcc;
+            border-color: #246fcc;
+            color: #fff;
         }
 
-        .form-control:focus, .form-select:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.15);
+        .badge-soft-primary { background: var(--ksu-pale); color: var(--ksu-primary-dark); border: 1px solid var(--ksu-border); }
+        .badge-soft-secondary { background: var(--ksu-soft); color: var(--ksu-primary-dark); border: 1px solid var(--ksu-border); }
+        .badge-soft-success { background: var(--ksu-success-bg, #e9f8f2); color: var(--ksu-success); border-color: rgba(21,149,112,.25) !important; }
+        .badge-soft-warning { background: var(--ksu-warning-bg, #fff7e6); color: var(--ksu-warning); border-color: rgba(233,162,59,.3) !important; }
+        .badge-soft-danger { background: var(--ksu-danger-bg, #fdecec); color: var(--ksu-danger); border-color: rgba(220,53,69,.25) !important; }
+
+        @media (max-width: 991.98px) {
+            .app-sidebar {
+                display: none;
+            }
+            .topbar {
+                padding: 0 18px;
+                height: 74px;
+            }
+            .page-content { padding: 18px 16px 84px 16px; }
+            .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
 
-        /* Badge Customization */
-        .badge-soft-success {
-            background-color: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-        }
-
-        .badge-soft-warning {
-            background-color: #fef9c3;
-            color: #854d0e;
-            border: 1px solid #fef08a;
-        }
-
-        .badge-soft-danger {
-            background-color: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .badge-soft-primary {
-            background-color: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-        }
-
-        .badge-soft-secondary {
-            background-color: #f1f5f9;
-            color: #475569;
-            border: 1px solid #e2e8f0;
-        }
-
-        /* Footer */
-        footer {
-            margin-top: auto;
-            border-top: 1px solid #e2e8f0;
-            background: #ffffff;
+        @media (max-width: 575.98px) {
+            .page-kicker { display: none; }
+            .info-grid, .quick-grid, .data-grid { grid-template-columns: 1fr; }
+            .topbar-actions .profile-pill { padding: 6px 8px; }
+            .page-title { font-size: 1.15rem; }
+            .next-exam-panel { padding: 20px 16px; }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    {% if user.is_authenticated and user.student_profile %}
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <div class="brand-lockup">
+                <div class="brand-mark"><i class="bi bi-mortarboard-fill"></i></div>
+                <div class="brand-text">Examination<span>Engine</span></div>
+            </div>
 
-    <!-- Main Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom sticky-top py-2">
-        <div class="container-fluid px-3 px-lg-4">
-            
-            <!-- Brand -->
-            {% if user.is_authenticated and user.student_profile %}
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'student_timetable' %}">
-                <i class="bi bi-mortarboard-fill text-primary fs-4"></i>
-                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
-                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Student Portal</span>
-            </a>
-            {% elif user.is_authenticated and user.lecturer_profile %}
-            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'lecturer_results_dashboard' %}">
-                <i class="bi bi-mortarboard text-primary fs-4"></i>
-                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
-                <span class="badge rounded-pill brand-badge ms-1 d-none d-sm-inline-block">Faculty & Staff Portal</span>
-            </a>
-            {% else %}
-            <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                <i class="bi bi-shield-check text-primary fs-4"></i>
-                <span>Examination<span class="text-primary-emphasis fw-bold text-info">Engine</span></span>
-            </a>
-            {% endif %}
+            <nav class="sidebar-nav" aria-label="Student navigation">
+                <a href="{% url 'student_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'student_timetable' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i> My Examinations</a>
+                <a href="{% url 'student_exam_pass' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_exam_pass' %}active{% endif %}"><i class="bi bi-card-heading"></i> Examination Pass</a>
+                <a href="{% url 'student_results' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_results' %}active{% endif %}"><i class="bi bi-award"></i> Results</a>
+                <a href="{% url 'student_notifications' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}"><i class="bi bi-bell"></i> Notifications</a>
+            </nav>
 
-            {% if user.is_authenticated %}
-            <div class="d-flex align-items-center ms-auto gap-2 gap-md-3">
-                
-                <!-- Student Navigation -->
-                {% if user.student_profile %}
-                <div class="text-end d-none d-md-block text-white-50">
-                    <div class="fw-semibold text-white small">
-                        {{ user.get_full_name|default:user.username }}
-                    </div>
-                    <span class="badge bg-primary bg-opacity-50 text-white font-monospace" style="font-size: 0.7rem;">
-                        {{ user.student_profile.registration_number }}
-                    </span>
+            <div class="sidebar-footer">
+                <a href="{% url 'student_profile' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_profile' %}active{% endif %}"><i class="bi bi-person-circle"></i> Profile</a>
+                <a href="{% url 'student_logout' %}" class="nav-link-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="topbar">
+                <div>
+                    <div class="page-kicker">Student Portal</div>
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
                 </div>
-
-                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1">
-                    <i class="bi bi-calendar3"></i>
-                    <span class="d-none d-sm-inline">My Timetable</span>
-                </a>
-
-                <a href="{% url 'student_exam_pass' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1">
-                    <i class="bi bi-card-heading"></i>
-                    <span class="d-none d-sm-inline">Exam Pass</span>
-                </a>
-
-                <a href="{% url 'student_results' %}" class="btn btn-sm btn-outline-success d-flex align-items-center gap-1">
-                    <i class="bi bi-award"></i>
-                    <span class="d-none d-sm-inline">My Results</span>
-                </a>
-
-                <a href="{% url 'student_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span class="d-none d-sm-inline">Logout</span>
-                </a>
-
-                <!-- Lecturer / Academic Staff Navigation -->
-                {% elif user.lecturer_profile %}
-                <div class="text-end d-none d-md-block text-white-50">
-                    <div class="fw-semibold text-white small">
-                        {{ user.get_full_name|default:user.username }}
-                    </div>
-                    <div class="d-flex align-items-center gap-1 justify-content-end">
-                        <span class="badge bg-secondary bg-opacity-50 text-white font-monospace" style="font-size: 0.65rem;">
-                            {{ user.lecturer_profile.staff_number }}
-                        </span>
-                        <span class="badge bg-light text-dark" style="font-size: 0.65rem;">Lecturer</span>
-                        {% if user.is_cod %}
-                        <span class="badge bg-primary text-white" style="font-size: 0.65rem;">COD</span>
-                        {% endif %}
-                        {% if user.is_dean %}
-                        <span class="badge bg-info text-dark" style="font-size: 0.65rem;">Dean</span>
-                        {% endif %}
-                        {% if user.has_invigilation_duties %}
-                        <span class="badge bg-success text-white" style="font-size: 0.65rem;" title="Assigned to Invigilate Examination Rooms"><i class="bi bi-shield-shaded me-1"></i>Invigilator</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-info d-flex align-items-center gap-1" title="Enter Course Marks & Exam Results">
-                    <i class="bi bi-file-earmark-spreadsheet"></i>
-                    <span class="d-none d-sm-inline">Marks Entry</span>
-                </a>
-
-                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" title="Assigned Invigilation Duties for Examination Rooms">
-                    <i class="bi bi-clipboard-check"></i>
-                    <span class="d-none d-sm-inline">Invigilation Duties</span>
-                    {% if user.has_invigilation_duties %}
-                    <span class="badge bg-success text-white rounded-pill px-1" style="font-size: 0.65rem;">{{ user.invigilation_duties_count }}</span>
-                    {% endif %}
-                </a>
-
-                {% if user.is_cod or user.is_dean or user.is_exam_officer or user.is_superuser %}
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-shield-lock"></i>
-                        <span class="d-none d-sm-inline">Approvals</span>
+                <div class="topbar-actions">
+                    <button class="icon-button" aria-label="Notifications">
+                        <i class="bi bi-bell"></i>
+                        <span class="badge-dot"></span>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow">
-                        {% if user.is_cod or user.is_superuser %}
-                        <li><a class="dropdown-item small" href="{% url 'cod_results_dashboard' %}"><i class="bi bi-building me-2 text-primary"></i>COD Departmental Review</a></li>
-                        {% endif %}
-                        {% if user.is_dean or user.is_superuser %}
-                        <li><a class="dropdown-item small" href="{% url 'dean_results_dashboard' %}"><i class="bi bi-award me-2 text-info"></i>Dean Faculty Review</a></li>
-                        {% endif %}
-                        {% if user.is_exam_officer or user.is_superuser %}
-                        <li><a class="dropdown-item small" href="{% url 'officer_planning_dashboard' %}"><i class="bi bi-calendar-range me-2 text-warning"></i>Exam Timetabling & Planning</a></li>
-                        <li><a class="dropdown-item small" href="{% url 'officer_results_dashboard' %}"><i class="bi bi-shield-check me-2 text-success"></i>Exam Authority Publication</a></li>
-                        {% endif %}
-                    </ul>
+                    <div class="profile-pill">
+                        <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
+                        <div class="profile-meta">
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            <small>{{ user.student_profile.registration_number }}</small>
+                        </div>
+                    </div>
                 </div>
-                {% endif %}
+            </header>
 
-                <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger d-flex align-items-center gap-1" title="Sign Out">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span class="d-none d-sm-inline">Logout</span>
-                </a>
-
-                <!-- Superuser / Admin Navigation -->
-                {% else %}
-                <div class="text-end d-none d-md-block text-white-50">
-                    <div class="fw-semibold text-white small">{{ user.username }}</div>
-                    <span class="badge bg-info text-dark" style="font-size: 0.7rem;">Admin</span>
-                </div>
-                <a href="{% url 'student_timetable' %}" class="btn btn-sm btn-outline-light">Student</a>
-                <a href="{% url 'invigilator_dashboard' %}" class="btn btn-sm btn-outline-light">Invigilator</a>
-                <a href="{% url 'lecturer_results_dashboard' %}" class="btn btn-sm btn-outline-light">Lecturer</a>
-                <a href="{% url 'cod_results_dashboard' %}" class="btn btn-sm btn-outline-light">COD</a>
-                <a href="{% url 'dean_results_dashboard' %}" class="btn btn-sm btn-outline-light">Dean</a>
-                <a href="{% url 'officer_planning_dashboard' %}" class="btn btn-sm btn-outline-warning">Planning</a>
-                <a href="{% url 'officer_results_dashboard' %}" class="btn btn-sm btn-outline-info">Results</a>
-                <a href="{% url 'invigilator_logout' %}" class="btn btn-sm btn-danger">Logout</a>
-                {% endif %}
-
-            </div>
-            {% else %}
-            <div class="d-flex align-items-center ms-auto gap-2">
-                <a href="{% url 'student_login' %}" class="btn btn-sm btn-outline-info">Student Login</a>
-                <a href="{% url 'invigilator_login' %}" class="btn btn-sm btn-outline-light">Invigilator Login</a>
-            </div>
-            {% endif %}
-        </div>
-    </nav>
-
-    <!-- Global Flash Messages -->
-    <div class="container-fluid px-3 px-lg-4 mt-3">
-        {% if messages %}
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm card-custom border-0 d-flex align-items-center justify-content-between" role="alert">
-                <div class="d-flex align-items-center gap-2">
-                    {% if message.tags == 'success' %}
-                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                    {% elif message.tags == 'error' or message.tags == 'danger' %}
-                        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-                    {% else %}
-                        <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+            <main class="page-content">
+                <div class="container-fluid px-0">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
                     {% endif %}
-                    <span>{{ message }}</span>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% elif user.is_authenticated and user.lecturer_profile %}
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <div class="brand-lockup">
+                <div class="brand-mark"><i class="bi bi-mortarboard-fill"></i></div>
+                <div class="brand-text">Examination<span>Engine</span></div>
             </div>
-            {% endfor %}
-        {% endif %}
+            <nav class="sidebar-nav" aria-label="Lecturer navigation">
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item active"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-calendar-check"></i> My Duties</a>
+                <a href="{% url 'lecturer_results_dashboard' %}" class="nav-link-item"><i class="bi bi-journal-text"></i> Examinations</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-broadcast-pin"></i> Sessions</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-person-check"></i> Attendance</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-upc-scan"></i> Booklets</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-shield-exclamation"></i> Malpractice</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-bell"></i> Notifications</a>
+                <a href="{% url 'lecturer_profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> Profile</a>
+                <a href="{% url 'invigilator_logout' %}" class="nav-link-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            </div>
+        </aside>
+        <div class="app-main">
+            <header class="topbar">
+                <div>
+                    <div class="page-kicker">Lecturer Portal</div>
+                    <h1 class="page-title">{% block lecturer_page_title %}Dashboard{% endblock %}</h1>
+                </div>
+                <div class="topbar-actions">
+                    <button class="icon-button" aria-label="Notifications"><i class="bi bi-bell"></i><span class="badge-dot"></span></button>
+                    <div class="profile-pill">
+                        <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
+                        <div class="profile-meta">
+                            <strong>{{ user.get_full_name|default:user.username }}</strong>
+                            <small>{{ user.lecturer_profile.staff_number }} · Lecturer</small>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main class="page-content">
+                <div class="container-fluid px-0">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+    {% else %}
+        <nav class="navbar navbar-expand-lg navbar-dark public-header sticky-top py-2">
+            <div class="container-fluid px-3 px-lg-4">
+                <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+                    <i class="bi bi-mortarboard-fill text-primary fs-4"></i>
+                    <span>Examination<span class="text-info fw-bold">Engine</span></span>
+                </a>
+                <div class="d-flex align-items-center ms-auto gap-2">
+                    <a href="{% url 'student_login' %}" class="btn btn-outline-light btn-sm">Student Login</a>
+                    <a href="{% url 'invigilator_login' %}" class="btn btn-light btn-sm">Invigilator Login</a>
+                </div>
+            </div>
+        </nav>
+        <main class="container-fluid px-3 px-lg-4 py-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+    {% endif %}
+
+    {% block content %}{% endblock %}
+
+    {% if user.is_authenticated and user.student_profile %}
+            </main>
+        </div>
     </div>
 
-    <!-- Main Content Container -->
-    <main class="container-fluid px-3 px-lg-4 py-3 flex-grow-1">
-        {% block content %}{% endblock %}
-    </main>
+    <nav class="navbar fixed-bottom navbar-light bg-white border-top d-lg-none shadow-lg" style="padding:0.5rem 0.75rem;">
+        <div class="container-fluid px-0">
+            <div class="d-flex justify-content-around w-100">
+                <a href="{% url 'student_dashboard' %}" class="btn btn-link text-dark p-2"><i class="bi bi-house d-block fs-5"></i><small>Home</small></a>
+                <a href="{% url 'student_timetable' %}" class="btn btn-link text-dark p-2"><i class="bi bi-calendar3 d-block fs-5"></i><small>Exams</small></a>
+                <a href="{% url 'student_exam_pass' %}" class="btn btn-link text-dark p-2"><i class="bi bi-card-heading d-block fs-5"></i><small>Pass</small></a>
+                <a href="{% url 'student_results' %}" class="btn btn-link text-dark p-2"><i class="bi bi-award d-block fs-5"></i><small>Results</small></a>
+                <a href="{% url 'student_profile' %}" class="btn btn-link text-dark p-2"><i class="bi bi-person-circle d-block fs-5"></i><small>More</small></a>
+            </div>
+        </div>
+    </nav>
+    {% elif user.is_authenticated and user.lecturer_profile %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+        </main>
+    {% endif %}
 
-    <!-- Footer -->
-    <footer class="py-3 text-center text-muted small">
+    <footer class="py-3 text-center text-muted small border-top bg-white">
         <div class="container">
-            <span>&copy; 2026 ExaminationEngine &bull; University Examination & Timetabling Automation</span>
+            <span>&copy; 2026 ExaminationEngine</span>
         </div>
     </footer>
 
-    <!-- Bootstrap 5.3 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     {% block extra_js %}{% endblock %}
 </body>

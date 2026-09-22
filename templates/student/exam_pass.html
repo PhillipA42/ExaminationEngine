@@ -7,7 +7,7 @@
     /* Screen Styling */
     .exam-pass-paper {
         background-color: #ffffff;
-        border: 2px solid #0f172a;
+        border: 2px solid var(--ksu-primary-dark);
         border-radius: 8px;
         padding: 2.5rem;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
@@ -16,15 +16,21 @@
     }
 
     .pass-header-border {
-        border-bottom: 3px double #0f172a;
+        border-bottom: 3px double var(--ksu-primary-dark);
         padding-bottom: 1rem;
     }
 
     .security-badge {
-        border: 1px dashed #64748b;
-        background: #f8fafc;
+        border: 1px dashed var(--ksu-border);
+        background: var(--ksu-pale);
         padding: 0.5rem 1rem;
         border-radius: 6px;
+    }
+
+    .exam-pass-table-head {
+        background: var(--ksu-pale);
+        color: var(--ksu-primary-dark);
+        border-color: var(--ksu-soft);
     }
 
     /* Print Specific Rules */
@@ -84,10 +90,18 @@
             <span>Back to Timetable</span>
         </a>
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
             <button type="button" class="btn btn-primary-custom d-flex align-items-center gap-2 px-4 shadow-sm" onclick="window.print()">
                 <i class="bi bi-printer-fill fs-5"></i>
-                <span class="fw-bold">Print / Save Pass (PDF)</span>
+                <span class="fw-bold">Print</span>
+            </button>
+            <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-2 px-4" onclick="window.print();">
+                <i class="bi bi-download fs-5"></i>
+                <span class="fw-bold">Download PDF</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-4" onclick="shareExamPass()">
+                <i class="bi bi-share fs-5"></i>
+                <span class="fw-bold">Share</span>
             </button>
         </div>
     </div>
@@ -178,7 +192,7 @@
 
             <div class="table-responsive">
                 <table class="table table-bordered table-sm align-middle text-dark" style="font-size: 0.85rem;">
-                    <thead class="table-dark text-uppercase text-center" style="font-size: 0.75rem;">
+                    <thead class="exam-pass-table-head text-uppercase text-center" style="font-size: 0.75rem;">
                         <tr>
                             <th style="width: 35px;">#</th>
                             <th style="width: 90px;">Unit Code</th>

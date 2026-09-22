@@ -9,12 +9,13 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from django.db import IntegrityError, transaction
+from django.utils import timezone
 
 from academics.models import Student, Lecturer
 from locations.models import Room
 from scheduling.models import StudentExamAllocation, ExamSchedule, ExamRoomAllocation
 from malpractice.models import MalpracticeCase, MalpracticeEvidence
-from .models import InvigilatorDuty, ExamAttendance
+from .models import InvigilatorDuty, ExamAttendance, ExaminationSession, InvigilationAudit
 from .services import InvigilationService
 
 
@@ -78,6 +79,13 @@ def invigilator_logout(request):
 
 
 @lecturer_required
+def lecturer_profile(request):
+    """Read-only staff profile for the authenticated lecturer identity."""
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    return render(request, 'invigilators/profile.html', {'lecturer': lecturer})
+
+
+@lecturer_required
 def invigilator_dashboard(request):
     """Dashboard displaying all assigned examination rooms and duties for the logged-in lecturer."""
     lecturer = getattr(request.user, 'lecturer_profile', None)
@@ -99,6 +107,9 @@ def invigilator_dashboard(request):
 
     # Calculate summary counts
     duties_list = []
+    today_duties = []
+    upcoming_duties = []
+    next_duty = None
     total_duties = duties_qs.count()
     upcoming_count = 0
     completed_count = 0
@@ -130,14 +141,25 @@ def invigilator_dashboard(request):
             else:
                 completed_count += 1
 
-        duties_list.append({
+        duty_item = {
             'duty': duty,
             'schedule': schedule,
             'student_count': student_count,
             'checked_in_count': checked_in_count,
             'is_today': is_today,
             'is_upcoming': is_upcoming,
-        })
+            'invigilator_count': InvigilatorDuty.objects.filter(
+                examination=duty.examination, room=duty.room
+            ).count(),
+        }
+        if is_today:
+            today_duties.append(duty_item)
+        if is_today or is_upcoming:
+            upcoming_duties.append(duty_item)
+            if next_duty is None:
+                next_duty = duty_item
+
+        duties_list.append(duty_item)
 
     context = {
         'lecturer': lecturer,
@@ -145,6 +167,9 @@ def invigilator_dashboard(request):
         'total_duties': total_duties,
         'upcoming_count': upcoming_count,
         'completed_count': completed_count,
+        'today_duties': today_duties,
+        'upcoming_duties': upcoming_duties,
+        'next_duty': next_duty,
         'today': today,
     }
     return render(request, 'invigilators/dashboard.html', context)
@@ -178,6 +203,7 @@ def session_roster(request, duty_id):
     examination = duty.examination
     room = duty.room
     schedule = getattr(examination, 'schedule', None)
+    session = ExaminationSession.objects.filter(examination=examination, room=room).first()
 
     # Fetch all allocated students for this exam session in this room
     allocations = StudentExamAllocation.objects.filter(
@@ -259,6 +285,7 @@ def session_roster(request, duty_id):
         'examination': examination,
         'room': room,
         'schedule': schedule,
+        'session': session,
         'roster_items': roster_items,
         'total_allocated': total_allocated,
         'checked_in_count': checked_in_count,
@@ -276,6 +303,29 @@ def session_roster(request, duty_id):
 
 @lecturer_required
 @require_POST
+def close_session(request, duty_id):
+    """Close only the room session belonging to the authenticated lecturer's duty."""
+    lecturer = getattr(request.user, 'lecturer_profile', None)
+    duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
+    session, _ = ExaminationSession.objects.get_or_create(
+        examination=duty.examination, room=duty.room,
+        defaults={'opened_by': lecturer},
+    )
+    if session.status == 'COMPLETED':
+        messages.info(request, 'This examination session is already closed.')
+    else:
+        session.status = 'COMPLETED'
+        session.closed_by = lecturer
+        session.closed_at = timezone.now()
+        session.closure_reason = request.POST.get('closure_reason', '').strip()
+        session.save(update_fields=['status', 'closed_by', 'closed_at', 'closure_reason'])
+        InvigilationAudit.objects.create(duty=duty, actor=lecturer, action='SESSION_CLOSED', details={'reason': session.closure_reason})
+        messages.success(request, 'Examination session closed. Attendance can no longer be changed.')
+    return redirect('session_roster', duty_id=duty.id)
+
+
+@lecturer_required
+@require_POST
 def student_checkin(request, duty_id):
     """
     Handles student check-in, presence toggle, and booklet serial number capture.
@@ -288,6 +338,8 @@ def student_checkin(request, duty_id):
     else:
         duty = get_object_or_404(InvigilatorDuty, id=duty_id)
 
+    if ExaminationSession.objects.filter(examination=duty.examination, room=duty.room, status='COMPLETED').exists():
+        return JsonResponse({'success': False, 'message': 'This examination session is closed.'}, status=403)
     if not InvigilationService.is_active(duty):
         return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
 
@@ -553,6 +605,8 @@ def batch_student_checkin(request, duty_id):
     else:
         duty = get_object_or_404(InvigilatorDuty, id=duty_id)
 
+    if ExaminationSession.objects.filter(examination=duty.examination, room=duty.room, status='COMPLETED').exists():
+        return JsonResponse({'success': False, 'message': 'This examination session is closed.'}, status=403)
     if not InvigilationService.is_active(duty):
         return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
 

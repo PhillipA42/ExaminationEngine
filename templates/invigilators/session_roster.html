@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ examination.unit.code }} - Session Roster & Check-In{% endblock %}
+{% block title %}{{ examination.unit.code }} - Session Roster & Attendance{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -8,9 +8,9 @@
         transition: all 0.2s ease-in-out;
     }
     .booklet-input:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-        background-color: #f8fafc;
+        border-color: var(--ksu-primary);
+        box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.2);
+        background-color: var(--ksu-pale);
     }
     .booklet-input-group.has-error .booklet-input {
         border-color: #dc2626 !important;
@@ -45,6 +45,14 @@
             </a>
 
             <div class="d-flex align-items-center gap-2">
+                {% if session.status == 'COMPLETED' %}
+                <span class="chip-status status-eligible"><i class="bi bi-check-circle"></i> Session closed</span>
+                {% else %}
+                <form method="POST" action="{% url 'close_session' duty_id=duty.id %}" onsubmit="return confirm('Close this examination session? Attendance changes will no longer be accepted.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"><i class="bi bi-lock"></i><span>Close Session</span></button>
+                </form>
+                {% endif %}
                 <!-- Malpractice Report Trigger Button -->
                 <button type="button" class="btn btn-sm btn-danger d-flex align-items-center gap-1 shadow-sm px-3" onclick="openMalpracticeModal()">
                     <i class="bi bi-exclamation-octagon-fill"></i>
@@ -146,10 +154,10 @@
             
             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2 mb-2">
                 <span class="fw-bold text-dark small text-uppercase letter-spacing-1">
-                    <i class="bi bi-activity text-success me-1"></i> Live Check-In Progress
+                    <i class="bi bi-activity text-success me-1"></i> Live Attendance Recording
                 </span>
                 <span class="fw-bold text-primary small font-monospace" id="progressPercentText">
-                    {{ checkin_percent }}% Checked In ({{ checked_in_count }}/{{ total_allocated }})
+                    {{ checkin_percent }}% Present ({{ checked_in_count }}/{{ total_allocated }})
                 </span>
             </div>
 
@@ -168,7 +176,7 @@
                 </div>
                 <div class="col-3">
                     <div class="p-2 rounded badge-soft-success border filter-pill" onclick="filterRoster('CHECKED_IN', this)" style="cursor: pointer;">
-                        <div style="font-size: 0.75rem;">Checked In</div>
+                        <div style="font-size: 0.75rem;">Present</div>
                         <div class="fw-bold fs-6 text-success" id="statCheckedIn">{{ checked_in_count }}</div>
                     </div>
                 </div>
@@ -198,9 +206,9 @@
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-person-lines-fill text-primary fs-5"></i>
                     <div>
-                        <div class="fw-bold text-dark">Student Session Roster & Attendance Marking</div>
+                        <div class="fw-bold text-dark">Student Roster & Attendance Recording</div>
                         <div class="text-muted small" style="font-size: 0.75rem;">
-                            <i class="bi bi-upc-scan text-primary me-1"></i>Enter or scan physical booklet serial # directly in the table &bull; Press <kbd class="px-1 text-white bg-dark">Enter</kbd> to save & auto-advance
+                            <i class="bi bi-upc-scan text-primary me-1"></i>Enter or scan the physical booklet serial number for each student &bull; Press <kbd class="px-1 text-white bg-dark">Enter</kbd> to save and continue
                         </div>
                     </div>
                 </div>
@@ -436,14 +444,14 @@
 
 </div>
 
-<!-- Check-In & Physical Booklet Serial Number Modal -->
+<!-- Attendance & Physical Booklet Serial Number Modal -->
 <div class="modal fade" id="checkInModal" tabindex="-1" aria-labelledby="checkInModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content card-custom border-0">
-            <div class="modal-header bg-dark text-white py-3">
+            <div class="modal-header text-white py-3" style="background:var(--ksu-header);">
                 <h5 class="modal-title d-flex align-items-center gap-2" id="checkInModalLabel">
                     <i class="bi bi-shield-check text-success"></i>
-                    <span>Student Check-In & Booklet Capture</span>
+                    <span>Record Attendance & Booklet Number</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -511,7 +519,7 @@
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary-custom btn-sm px-4 d-flex align-items-center gap-2" id="modalSubmitBtn">
                         <i class="bi bi-check-lg"></i>
-                        <span>Save & Update Check-In</span>
+                        <span>Save Attendance Record</span>
                     </button>
                 </div>
             </form>
@@ -872,7 +880,7 @@
                 }
                 return true;
             } else {
-                const errMsg = result.message || 'Check-in failed.';
+                const errMsg = result.message || 'Attendance recording failed.';
                 if (feedback) {
                     feedback.innerText = errMsg;
                     feedback.classList.remove('d-none');
@@ -1042,7 +1050,7 @@
         }
         const pText = document.getElementById('progressPercentText');
         if (pText) {
-            pText.innerText = `${stats.percent}% Checked In (${stats.checked_in}/${stats.total})`;
+            pText.innerText = `${stats.percent}% Present (${stats.checked_in}/${stats.total})`;
         }
     }
 
@@ -1199,7 +1207,7 @@
                 updateRowCheckInState(studentId, result);
                 checkInModalInstance.hide();
             } else {
-                errorAlert.innerText = result.message || 'An error occurred during check-in.';
+                errorAlert.innerText = result.message || 'An error occurred while recording attendance.';
                 errorAlert.classList.remove('d-none');
             }
         } catch (err) {
@@ -1207,7 +1215,7 @@
             errorAlert.classList.remove('d-none');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> <span>Save & Update Check-In</span>';
+            submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> <span>Save Attendance Record</span>';
         }
     }
 

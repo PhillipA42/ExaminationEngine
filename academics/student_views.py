@@ -12,6 +12,44 @@ from academics.models import Student
 from scheduling.models import StudentExamAllocation, ExaminationPeriod
 
 
+def get_student_allocations(student):
+    """Return the student's published examination allocations in schedule order."""
+    return StudentExamAllocation.objects.filter(
+        student=student, examination__period__status='PUBLISHED'
+    ).select_related(
+        'examination__unit__course',
+        'examination__period',
+        'room__building__campus',
+        'room__floor',
+        'examination__schedule',
+    ).order_by('examination__schedule__exam_date', 'examination__schedule__start_time')
+
+
+def get_next_exam_summary(student):
+    allocations = list(get_student_allocations(student))
+    today = date.today()
+    next_exam = None
+    upcoming = []
+
+    for alloc in allocations:
+        schedule = getattr(alloc.examination, 'schedule', None)
+        if not schedule or not schedule.exam_date:
+            continue
+        item = {'allocation': alloc, 'exam': alloc.examination, 'schedule': schedule, 'room': alloc.room}
+        if schedule.exam_date >= today:
+            upcoming.append(item)
+            if next_exam is None:
+                next_exam = item
+
+    return {
+        'allocations': allocations,
+        'next_exam': next_exam,
+        'upcoming': upcoming[:5],
+        'total': len(allocations),
+        'today': today,
+    }
+
+
 def student_required(view_func):
     """Decorator to ensure the authenticated user has an active Student profile."""
     @wraps(view_func)
@@ -27,7 +65,7 @@ def student_required(view_func):
 def student_login(request):
     """Student portal login view."""
     if request.user.is_authenticated and hasattr(request.user, 'student_profile'):
-        return redirect('student_timetable')
+        return redirect('student_dashboard')
 
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
@@ -40,7 +78,7 @@ def student_login(request):
             else:
                 login(request, user)
                 messages.success(request, f"Welcome, {user.get_full_name() or user.username}!")
-                next_url = request.POST.get('next') or request.GET.get('next') or 'student_timetable'
+                next_url = request.POST.get('next') or request.GET.get('next') or 'student_dashboard'
                 return redirect(next_url)
         else:
             messages.error(request, "Invalid registration/username or password. Please try again.")
@@ -56,6 +94,61 @@ def student_logout(request):
 
 
 @student_required
+def student_dashboard(request):
+    """Personalized student landing page with the most relevant examination information first."""
+    student = getattr(request.user, 'student_profile', None)
+    if not student and request.user.is_superuser:
+        student = Student.objects.first()
+
+    summary = get_next_exam_summary(student)
+    allocations = summary['allocations']
+    next_exam = summary['next_exam']
+    upcoming = summary['upcoming']
+
+    active_period = allocations[0].examination.period if allocations else ExaminationPeriod.objects.first()
+    eligibility_status = 'Eligible'
+    eligibility_detail = 'You are cleared to sit this examination.'
+    if active_period:
+        try:
+            from academics.eligibility_services import EligibilityService
+            evaluation = EligibilityService().evaluate(student, active_period)
+            eligibility_status = getattr(evaluation, 'overall_status', 'Eligible')
+            eligibility_detail = getattr(evaluation, 'details', None) or getattr(evaluation, 'reason', None) or 'You are cleared to sit this examination.'
+        except Exception:
+            pass
+
+    from academics.models import Notification
+    recent_updates = Notification.objects.filter(recipient=request.user).order_by('-created_at')[:4]
+
+    context = {
+        'student': student,
+        'next_exam': next_exam,
+        'upcoming_exams': upcoming,
+        'total_exams': len(allocations),
+        'eligibility_status': eligibility_status,
+        'eligibility_detail': eligibility_detail,
+        'active_period': active_period,
+        'today': summary['today'],
+        'recent_updates': recent_updates,
+    }
+    return render(request, 'student/dashboard.html', context)
+
+
+@student_required
+def student_profile(request):
+    """Read-only student profile synchronized from the authoritative ERP data."""
+    student = getattr(request.user, 'student_profile', None)
+    if not student and request.user.is_superuser:
+        student = Student.objects.first()
+
+    context = {
+        'student': student,
+        'academic_status': getattr(student, 'status', 'ACTIVE'),
+    }
+    return render(request, 'student/profile.html', context)
+
+
+@student_required
 def student_timetable(request):
     """Personalized timetable dashboard for the logged-in student."""
     student = getattr(request.user, 'student_profile', None)
@@ -67,14 +160,7 @@ def student_timetable(request):
     today = date.today()
 
     # Fetch all exam allocations for this student with schedule & room details
-    allocations_qs = StudentExamAllocation.objects.filter(
-        student=student, examination__period__status='PUBLISHED'
-    ).select_related(
-        'examination__unit__course',
-        'examination__period',
-        'room__building__campus',
-        'room__floor'
-    ).order_by('examination__schedule__exam_date', 'examination__schedule__start_time')
+    allocations_qs = get_student_allocations(student)
 
     timetable_items = []
     total_exams = allocations_qs.count()
@@ -137,6 +223,58 @@ def student_timetable(request):
         'today': today,
     }
     return render(request, 'student/timetable.html', context)
+
+
+@student_required
+def student_exam_detail(request, allocation_id):
+    """Central detail page for a single examination allocation."""
+    student = getattr(request.user, 'student_profile', None)
+    if not student and request.user.is_superuser:
+        student = Student.objects.first()
+
+    allocation = get_object_or_404(StudentExamAllocation, id=allocation_id, student=student)
+    exam = allocation.examination
+    schedule = getattr(exam, 'schedule', None)
+    try:
+        from academics.eligibility_services import EligibilityService
+        eligibility = EligibilityService().evaluate(student, exam.period)
+    except Exception:
+        eligibility = None
+
+    context = {
+        'student': student,
+        'allocation': allocation,
+        'exam': exam,
+        'schedule': schedule,
+        'eligibility': eligibility,
+        'invigilator': getattr(exam, 'invigilator', None),
+        'room': allocation.room,
+    }
+    return render(request, 'student/exam_detail.html', context)
+
+
+@student_required
+def student_venue_navigation(request, allocation_id):
+    """Outdoor-first venue navigation page for the selected examination."""
+    student = getattr(request.user, 'student_profile', None)
+    if not student and request.user.is_superuser:
+        student = Student.objects.first()
+
+    allocation = get_object_or_404(StudentExamAllocation, id=allocation_id, student=student)
+    room = allocation.room
+    building = room.building
+    campus = building.campus
+    context = {
+        'student': student,
+        'allocation': allocation,
+        'room': room,
+        'building': building,
+        'campus': campus,
+        'distance_km': '0.6 km',
+        'walking_time': '8 minutes',
+        'current_location': 'Student Union Gate',
+    }
+    return render(request, 'student/venue_navigation.html', context)
 
 
 @student_required

@@ -365,6 +365,29 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertContains(resp2, "Software Architecture")
         self.assertContains(resp2, "60.00")
 
+    def test_student_dashboard_shows_personal_exam_overview(self):
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get('/student/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Welcome')
+        self.assertContains(response, 'John Doe')
+        self.assertContains(response, 'Next examination')
+        self.assertContains(response, 'Upcoming examinations')
+        self.assertContains(response, 'View timetable')
+        self.assertContains(response, 'View results')
+
+    def test_student_profile_page_is_read_only_and_authoritative(self):
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get('/student/profile/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Student profile')
+        self.assertContains(response, 'CT101/0001/26')
+        self.assertContains(response, 'School of Information Science')
+        self.assertContains(response, 'BSc Computer Science')
+        self.assertNotContains(response, 'Edit profile')
+
     def test_non_owner_cannot_edit_submission_through_service(self):
         submission = ResultWorkflowService.get_or_create_submission(self.exam_cs, self.lecturer_cs)
         with self.assertRaises(ValidationError) as ctx:

@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="hero-card d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+            <div>
+                <div class="page-kicker mb-2" style="letter-spacing:0.08em;">Good {{ request.user.student_profile.user.last_login|date:'H' }}</div>
+                <h2 class="mb-2" style="font-weight:800; letter-spacing:-0.05em; margin:0;">Welcome, {{ student.user.get_full_name|default:student.user.username }} 👋</h2>
+                <p class="mb-0 muted">Here is your examination overview for the current academic period.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <a href="{% url 'student_timetable' %}" class="primary-btn"><i class="bi bi-calendar3"></i> View timetable</a>
+                <a href="{% url 'student_exam_pass' %}" class="secondary-btn"><i class="bi bi-card-heading"></i> Exam pass</a>
+                <a href="{% url 'student_results' %}" class="secondary-btn"><i class="bi bi-award"></i> View results</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="info-grid">
+            <div class="metric-card">
+                <div class="metric-label">Eligibility</div>
+                <div class="metric-value {% if eligibility_status == 'ELIGIBLE' %}text-success{% elif eligibility_status == 'NOT_ELIGIBLE' %}text-danger{% else %}text-warning{% endif %}">{{ eligibility_status|upper }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Upcoming</div>
+                <div class="metric-value text-primary">{{ upcoming_exams|length }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Registered</div>
+                <div class="metric-value text-dark">{{ total_exams }}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Course</div>
+                <div class="metric-value" style="font-size:1.2rem; letter-spacing:-0.02em;">{{ student.course.name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        {% if next_exam %}
+        <div class="next-exam-panel">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <div class="chip mb-3"><i class="bi bi-clock-history"></i> Next examination</div>
+                    <h3 class="mb-2" style="font-weight:800; letter-spacing:-0.04em; margin:0;">{{ next_exam.exam.unit.code }} • {{ next_exam.exam.unit.name }}</h3>
+                    <div class="d-flex flex-wrap align-items-center gap-3 text-white-50 small">
+                        <span><i class="bi bi-calendar3 me-1"></i>{{ next_exam.schedule.exam_date|date:"l, d M Y" }}</span>
+                        <span><i class="bi bi-clock me-1"></i>{{ next_exam.schedule.start_time|time:"H:i" }} - {{ next_exam.schedule.end_time|time:"H:i" }}</span>
+                    </div>
+                </div>
+                <div class="text-lg-end">
+                    <div class="text-white-50 small text-uppercase">Venue</div>
+                    <div class="fw-bold fs-5">{{ next_exam.room.building.name }}</div>
+                    <div class="small text-white-50">{{ next_exam.room.floor.name|default:'Main floor' }} • {{ next_exam.room.name }}</div>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4 pt-3 border-top border-white border-opacity-20">
+                <div class="chip-status status-eligible"><i class="bi bi-check-circle-fill"></i> {% if next_exam.schedule.exam_date == today %}Today • Starts soon{% else %}Starts soon{% endif %}</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="{% url 'student_exam_detail' allocation_id=next_exam.allocation.id %}" class="primary-btn" style="background:white;color:var(--ksu-primary-dark); border-color:transparent;">View examination</a>
+                    <a href="{% url 'student_venue_navigation' allocation_id=next_exam.allocation.id %}" class="ghost-btn" style="background:rgba(255,255,255,0.08); color:white; border-color:rgba(255,255,255,0.16);">Navigate</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="d-flex flex-column align-items-center gap-3">
+                <div class="icon-button" style="width:64px;height:64px;border-radius:18px;background:var(--ksu-pale);color:var(--ksu-primary);border:none;"><i class="bi bi-calendar-x fs-4"></i></div>
+                <div>
+                    <div class="chip mb-3"><i class="bi bi-clock-history"></i> Next examination</div>
+                    <h4 class="fw-bold mb-2 text-dark">Your examination timetable is currently empty</h4>
+                    <p class="mb-3">No examinations have been scheduled for your registered units in the current examination period.</p>
+                    <a href="{% url 'student_notifications' %}" class="primary-btn"><i class="bi bi-bell"></i> View notifications</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-12 col-xl-8">
+        <div class="section-card card-custom">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <div>
+                    <div class="page-kicker">Planning</div>
+                    <h4 class="mb-0 fw-bold" style="letter-spacing:-0.03em;">Upcoming examinations</h4>
+                </div>
+                <a href="{% url 'student_timetable' %}" class="secondary-btn">Full timetable</a>
+            </div>
+
+            {% if upcoming_exams %}
+            <ul class="list-plain">
+                {% for item in upcoming_exams %}
+                <li class="exam-item">
+                    <div>
+                        <div class="exam-unit">{{ item.exam.unit.code }} • {{ item.exam.unit.name }}</div>
+                        <div class="exam-sub">{{ item.schedule.exam_date|date:"d M Y" }} • {{ item.schedule.start_time|time:"H:i" }} - {{ item.schedule.end_time|time:"H:i" }}</div>
+                    </div>
+                    <div class="exam-meta">
+                        <div class="fw-700 text-primary">{{ item.room.name }}</div>
+                        <div>{{ item.room.building.name }}</div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state" style="padding:26px 20px;">
+                No upcoming examinations have been published yet.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="section-card card-custom">
+            <div class="page-kicker">Quick access</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Student tools</h4>
+            <div class="quick-grid">
+                <a href="{% url 'student_timetable' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-calendar3"></i></span><span class="fw-700">Timetable</span></a>
+                <a href="{% url 'student_exam_pass' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-card-heading"></i></span><span class="fw-700">Pass</span></a>
+                {% if next_exam %}<a href="{% url 'student_venue_navigation' allocation_id=next_exam.allocation.id %}" class="quick-action"><span class="quick-icon"><i class="bi bi-geo-alt"></i></span><span class="fw-700">Navigate</span></a>{% endif %}
+                <a href="{% url 'student_results' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-award"></i></span><span class="fw-700">Results</span></a>
+                <a href="{% url 'student_notifications' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-bell"></i></span><span class="fw-700">Alerts</span></a>
+                <a href="{% url 'student_profile' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-person-circle"></i></span><span class="fw-700">Profile</span></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="section-card card-custom h-100">
+            <div class="page-kicker">Eligibility</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Exam clearance</h4>
+            <div class="summary-stack">
+                <div class="score-card">
+                    <div class="chip-status {% if eligibility_status == 'ELIGIBLE' %}status-eligible{% elif eligibility_status == 'NOT_ELIGIBLE' %}status-danger{% else %}status-warning{% endif %}">
+                        {{ eligibility_status|default:'ELIGIBLE' }}
+                    </div>
+                    <p class="mb-0 mt-3 muted">{{ eligibility_detail|default:'You are cleared to sit this examination.' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-8">
+        <div class="section-card card-custom h-100">
+            <div class="page-kicker">Recent updates</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Examination updates</h4>
+            {% if recent_updates %}
+            <div class="summary-stack">
+                {% for item in recent_updates %}
+                <div class="action-card">
+                    <div>
+                        <div class="fw-700">{{ item.title }}</div>
+                        <div class="small muted mt-1">{{ item.message }}</div>
+                    </div>
+                    <div class="small muted">{{ item.created_at|date:"d M Y" }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:26px 20px;">No recent updates available.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

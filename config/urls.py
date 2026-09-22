@@ -16,7 +16,7 @@ urlpatterns = [
     path('student/', include('academics.student_urls')),
     path('results/', include('academics.results_urls')),
     path('scheduling/', include('scheduling.web_urls')),
-    path('', RedirectView.as_view(url='/student/timetable/', permanent=False)),
+    path('', RedirectView.as_view(url='/student/', permanent=False)),
 
     # REST APIs
     path('api/auth/', include('authentication.urls')),

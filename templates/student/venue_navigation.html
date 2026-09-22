@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Venue Navigation{% endblock %}
+{% block page_title %}Navigate{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-12">
+        <div class="card-custom p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div>
+                    <div class="page-kicker">Your examination venue</div>
+                    <h3 class="mb-0 fw-bold" style="letter-spacing:-0.04em; margin:0;">{{ building.name }} • {{ room.name }}</h3>
+                </div>
+                <a href="{% url 'student_exam_detail' allocation_id=allocation.id %}" class="secondary-btn"><i class="bi bi-arrow-left"></i> Back to exam</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="card-custom section-card h-100">
+            <div class="page-kicker">Route summary</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Directions</h4>
+            <div class="summary-stack">
+                <div class="data-box"><div class="data-label">Current location</div><div class="data-value">{{ current_location }}</div></div>
+                <div class="data-box"><div class="data-label">Destination</div><div class="data-value">{{ building.name }}</div></div>
+                <div class="data-box"><div class="data-label">Floor</div><div class="data-value">{{ room.floor.name|default:'Main floor' }}</div></div>
+                <div class="data-box"><div class="data-label">Room</div><div class="data-value">{{ room.name }}</div></div>
+                <div class="data-box"><div class="data-label">Distance</div><div class="data-value">{{ distance_km }}</div></div>
+                <div class="data-box"><div class="data-label">Estimated walking time</div><div class="data-value">{{ walking_time }}</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="card-custom section-card h-100">
+            <div class="page-kicker">Map preview</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Campus location</h4>
+            <div class="card-soft p-4" style="min-height:260px; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,var(--ksu-pale),var(--ksu-soft));">
+                <div class="text-center">
+                    <div class="mb-3" style="font-size:3rem; color:var(--ksu-primary);"><i class="bi bi-geo-alt-fill"></i></div>
+                    <div class="fw-bold" style="font-size:1.2rem;">{{ building.name }}</div>
+                    <div class="muted">{{ room.name }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
