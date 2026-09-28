@@ -12,13 +12,13 @@ from academics.models import (
 from locations.models import Campus, Building, Floor, Room
 from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, ExamRoomAllocation, StudentExamAllocation
 from scheduling.engine import TimetableSchedulerEngine
-from invigilators.models import InvigilatorDuty, ExamAttendance
+from invigilators.models import InvigilatorDuty
 from malpractice.models import MalpracticeCase, MalpracticeEvidence
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Seeds database with realistic test data including lecturers, duties, attendance with booklets, malpractice cases, and assessment marks.'
+    help = 'Seeds database with development data for academics, scheduling, invigilator duties, malpractice cases, and assessment marks.'
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -292,34 +292,15 @@ class Command(BaseCommand):
             )
 
         # -------------------------------------------------------------
-        # 9. SAMPLE EXAM ATTENDANCE & BOOKLET SERIAL NUMBERS
+        # 9. SAMPLE MALPRACTICE CASE & EVIDENCE ATTACHMENTS
         # -------------------------------------------------------------
-        # Generate attendance records for the first scheduled exam (CSC401)
+        # Keep the sample case associated with the seeded exam and room.
+        # Attendance is intentionally not seeded: lecturers must record real
+        # attendance and enter the serial printed on the candidate's booklet.
         primary_exam = examinations[0]
         allocated_room = Room.objects.filter(allocated_exams__examination=primary_exam).first() or room_a
         recording_lecturer = lecturers[0]
 
-        for idx, student in enumerate(students, start=1):
-            booklet_number = f"BKT-2026-{primary_exam.unit.code}-{idx:04d}"
-            # Mark first 4 students present, 5th student absent to show realistic scenario
-            is_present = (idx != 5)
-            remarks = "Candidate verified via Student ID card & signature." if is_present else "Absent without prior notice."
-
-            ExamAttendance.objects.get_or_create(
-                examination=primary_exam,
-                student=student,
-                defaults={
-                    'room': allocated_room,
-                    'recorded_by': recording_lecturer,
-                    'booklet_serial_number': booklet_number,
-                    'is_present': is_present,
-                    'remarks': remarks
-                }
-            )
-
-        # -------------------------------------------------------------
-        # 10. MALPRACTICE CASE & EVIDENCE ATTACHMENTS
-        # -------------------------------------------------------------
         suspect_student = students[3] # std004 (Mary Wanjiku)
         case_number = "MAL-2026-00001"
 

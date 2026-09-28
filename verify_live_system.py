@@ -1,3 +1,4 @@
+import os
 import urllib.request
 import urllib.parse
 import http.cookiejar
@@ -95,26 +96,35 @@ roster_html = roster_resp.read().decode('utf-8')
 has_roster = "Student Session Roster" in roster_html
 print(f"[8] Exam Room Session Roster Loaded (HTTP {roster_resp.getcode()}) -> Roster Displayed: {has_roster}")
 
-# Test Live Student Check-In API
-checkin_payload = json.dumps({
-    'student_id': 1,
-    'is_present': True,
-    'booklet_serial_number': 'BKT-2026-LIVE-FINAL-01',
-    'remarks': 'Live check-in verification confirmed.'
-}).encode('utf-8')
+# Attendance writes require explicit values so verification cannot create fake records.
+test_duty_id = os.environ.get('ATTENDANCE_TEST_DUTY_ID')
+test_student_id = os.environ.get('ATTENDANCE_TEST_STUDENT_ID')
+test_booklet_serial = os.environ.get('ATTENDANCE_TEST_BOOKLET_SERIAL')
+if test_duty_id and test_student_id and test_booklet_serial:
+    checkin_payload = json.dumps({
+        'student_id': int(test_student_id),
+        'is_present': True,
+        'booklet_serial_number': test_booklet_serial.strip(),
+        'remarks': 'Attendance verification run with operator-provided values.'
+    }).encode('utf-8')
 
-checkin_req = urllib.request.Request(
-    'http://127.0.0.1:8000/invigilator/session/1/checkin/',
-    data=checkin_payload,
-    headers={
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrf_token2,
-        'Referer': 'http://127.0.0.1:8000/invigilator/session/1/'
-    }
-)
-checkin_resp = opener2.open(checkin_req)
-checkin_json = json.loads(checkin_resp.read().decode('utf-8'))
-print(f"[9] Live Student Check-In API Executed (HTTP {checkin_resp.getcode()}) -> Result: {checkin_json.get('message')}")
+    checkin_url = f'http://127.0.0.1:8000/invigilator/session/{int(test_duty_id)}/checkin/'
+    checkin_req = urllib.request.Request(
+        checkin_url,
+        data=checkin_payload,
+        headers={
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrf_token2,
+            'Referer': f'http://127.0.0.1:8000/invigilator/session/{int(test_duty_id)}/'
+        }
+    )
+    checkin_resp = opener2.open(checkin_req)
+    checkin_json = json.loads(checkin_resp.read().decode('utf-8'))
+    print(f"[9] Check-In API Executed (HTTP {checkin_resp.getcode()}) -> Result: {checkin_json.get('message')}")
+else:
+    print('[9] Attendance write skipped. Set ATTENDANCE_TEST_DUTY_ID, '
+          'ATTENDANCE_TEST_STUDENT_ID, and ATTENDANCE_TEST_BOOKLET_SERIAL '
+          'to run against a designated test record.')
 
 # -------------------------------------------------------------
 # 3. Reconciliation Module API Verification

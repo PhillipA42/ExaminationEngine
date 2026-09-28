@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
+from django.urls import NoReverseMatch, reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -8,6 +10,32 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
 from .serializers import UserSerializer, RegisterUserSerializer
+
+
+def _safe_next_url(request):
+    """Return a valid same-host destination, ignoring malformed or unsafe next values."""
+    allowed_hosts = {request.get_host()}
+    for value in (request.POST.get('next'), request.GET.get('next')):
+        candidate = (value or '').strip()
+        if not candidate:
+            continue
+        if not url_has_allowed_host_and_scheme(
+            candidate,
+            allowed_hosts=allowed_hosts,
+            require_https=request.is_secure(),
+        ):
+            continue
+
+        # Redirect paths/URLs directly. Bare names are accepted only if they
+        # resolve to a real URL pattern, preventing reverse('None') failures.
+        if '/' in candidate:
+            return candidate
+        try:
+            reverse(candidate)
+        except NoReverseMatch:
+            continue
+        return candidate
+    return None
 
 
 def unified_login(request):
@@ -30,7 +58,7 @@ def unified_login(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            next_url = request.POST.get('next') or request.GET.get('next')
+            next_url = _safe_next_url(request)
 
             if hasattr(user, 'student_profile'):
                 messages.success(request, f"Welcome, {user.get_full_name() or user.username}!")

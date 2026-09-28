@@ -16,7 +16,7 @@ from locations.models import Room
 from scheduling.models import StudentExamAllocation, ExamSchedule, ExamRoomAllocation
 from malpractice.models import MalpracticeCase, MalpracticeEvidence
 from .models import InvigilatorDuty, ExamAttendance, ExaminationSession, InvigilationAudit
-from .services import InvigilationService
+from .services import InvigilationService, InvigilationError
 
 
 def lecturer_required(view_func):
@@ -300,14 +300,22 @@ def student_checkin(request, duty_id):
     Milestone 9: Eligibility gate applied — NOT_ELIGIBLE students are blocked from check-in.
     """
     lecturer = getattr(request.user, 'lecturer_profile', None)
-    if lecturer:
-        duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
-    else:
-        duty = get_object_or_404(InvigilatorDuty, id=duty_id)
+    if not lecturer:
+        msg = 'Only an assigned lecturer may record examination attendance.'
+        if request.content_type == 'application/json':
+            return JsonResponse({'success': False, 'message': msg}, status=403)
+        messages.error(request, msg)
+        return redirect('invigilator_dashboard')
+
+    duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
 
     if ExaminationSession.objects.filter(examination=duty.examination, room=duty.room, status='COMPLETED').exists():
         return JsonResponse({'success': False, 'message': 'This examination session is closed.'}, status=403)
-    if not InvigilationService.is_active(duty):
+    try:
+        is_active = InvigilationService.is_active(duty)
+    except InvigilationError:
+        return JsonResponse({'success': False, 'message': 'Attendance is unavailable until the examination schedule is finalized.'}, status=403)
+    if not is_active:
         return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
 
     # Determine if request is JSON or Form data
@@ -567,14 +575,18 @@ def batch_student_checkin(request, duty_id):
     Accepts a JSON payload: { "records": [ {"student_id": 1, "booklet_serial_number": "...", "is_present": true}, ... ] }
     """
     lecturer = getattr(request.user, 'lecturer_profile', None)
-    if lecturer:
-        duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
-    else:
-        duty = get_object_or_404(InvigilatorDuty, id=duty_id)
+    if not lecturer:
+        return JsonResponse({'success': False, 'message': 'Only an assigned lecturer may record examination attendance.'}, status=403)
+
+    duty = get_object_or_404(InvigilatorDuty, id=duty_id, lecturer=lecturer)
 
     if ExaminationSession.objects.filter(examination=duty.examination, room=duty.room, status='COMPLETED').exists():
         return JsonResponse({'success': False, 'message': 'This examination session is closed.'}, status=403)
-    if not InvigilationService.is_active(duty):
+    try:
+        is_active = InvigilationService.is_active(duty)
+    except InvigilationError:
+        return JsonResponse({'success': False, 'message': 'Attendance is unavailable until the examination schedule is finalized.'}, status=403)
+    if not is_active:
         return JsonResponse({'success': False, 'message': 'Attendance is only available during the examination time window.'}, status=403)
 
     try:

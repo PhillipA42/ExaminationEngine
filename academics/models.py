@@ -397,6 +397,7 @@ class Notification(models.Model):
     NOTIFICATION_TYPES = [
         ('TIMETABLE_PUBLISHED', 'Timetable Published'),
         ('TIMETABLE_CHANGE', 'Timetable Schedule Change'),
+        ('EXAM_REMINDER', 'Upcoming Examination Reminder'),
         ('ELIGIBILITY_UPDATE', 'Examination Eligibility Update'),
         ('EXAM_PASS_READY', 'Examination Pass Available'),
         ('DUTY_REMINDER', 'Upcoming Invigilation Duty Reminder'),

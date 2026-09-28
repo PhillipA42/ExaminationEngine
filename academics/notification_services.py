@@ -116,7 +116,7 @@ class NotificationService:
         dedup_key = self._make_dedup_key(recipient, notification_type, dedup_context)
 
         # Check if already sent via IN_APP (the primary channel) within dedup scope
-        if NotificationDelivery.objects.filter(dedup_key=dedup_key, channel="IN_APP").exists():
+        if NotificationDelivery.objects.filter(dedup_key=f"{dedup_key}:IN_APP", channel="IN_APP").exists():
             logger.debug("NotificationService: deduped notification %s for user %s", notification_type, recipient)
             return None
 

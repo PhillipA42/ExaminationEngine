@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.core import signing
 from django.utils import timezone
+from urllib.parse import urlencode
 
 from academics.models import Student
 from scheduling.models import StudentExamAllocation, ExaminationPeriod
@@ -27,7 +28,7 @@ def get_student_allocations(student):
 
 def get_next_exam_summary(student):
     allocations = list(get_student_allocations(student))
-    today = date.today()
+    today = timezone.localdate()
     next_exam = None
     upcoming = []
 
@@ -144,7 +145,7 @@ def student_timetable(request):
     if not student and request.user.is_superuser:
         student = Student.objects.first()
 
-    today = date.today()
+    today = timezone.localdate()
 
     # Fetch all exam allocations for this student with schedule & room details
     allocations_qs = get_student_allocations(student)
@@ -251,15 +252,23 @@ def student_venue_navigation(request, allocation_id):
     room = allocation.room
     building = room.building
     campus = building.campus
+    if building.latitude is not None and building.longitude is not None:
+        maps_url = 'https://www.google.com/maps/dir/?' + urlencode({
+            'api': '1',
+            'destination': f'{building.latitude},{building.longitude}',
+        })
+    else:
+        maps_url = 'https://www.google.com/maps/search/?' + urlencode({
+            'api': '1',
+            'query': f'{building.name}, {campus.name}',
+        })
     context = {
         'student': student,
         'allocation': allocation,
         'room': room,
         'building': building,
         'campus': campus,
-        'distance_km': '0.6 km',
-        'walking_time': '8 minutes',
-        'current_location': 'Student Union Gate',
+        'maps_url': maps_url,
     }
     return render(request, 'student/venue_navigation.html', context)
 

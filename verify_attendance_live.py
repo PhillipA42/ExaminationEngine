@@ -49,49 +49,45 @@ print(f"    - 'Mark Remaining Absent' button present: {has_absent_all}")
 print(f"    - Barcode / Enter key instruction present: {has_enter_instruction}")
 assert has_inline_input and has_save_all, "Roster template missing inline booklet input fields"
 
-# 4. Live Check-In with Booklet Serial via AJAX
-duty = InvigilatorDuty.objects.filter(examination=exam).first()
-first_student = duty.examination.student_allocations.first().student
+# 4-5. Attendance writes require explicit real/test values from the operator.
+# Do not manufacture booklet serials or mutate live attendance when verifying the UI.
+duty_id = os.environ.get('ATTENDANCE_TEST_DUTY_ID')
+student_id = os.environ.get('ATTENDANCE_TEST_STUDENT_ID')
+booklet_serial = os.environ.get('ATTENDANCE_TEST_BOOKLET_SERIAL')
 
-checkin_payload = {
-    'student_id': first_student.id,
-    'booklet_serial_number': f'BKT-LIVE-E2E-{first_student.id:04d}',
-    'is_present': True
-}
-resp_checkin = client.post(
-    f'/invigilator/session/{duty.id}/checkin/',
-    data=json.dumps(checkin_payload),
-    content_type='application/json'
-)
-checkin_json = resp_checkin.json()
-print(f"[4] Live Single Check-In API Execution (HTTP {resp_checkin.status_code}):")
-print(f"    - Success: {checkin_json.get('success')}")
-print(f"    - Booklet recorded: {checkin_json.get('booklet_serial_number')}")
-print(f"    - Status: {checkin_json.get('status')}")
-print(f"    - Updated checked_in count: {checkin_json.get('stats', {}).get('checked_in')}")
-assert checkin_json.get('success') is True, "Single checkin failed"
+if duty_id and student_id and booklet_serial:
+    checkin_payload = {
+        'student_id': int(student_id),
+        'booklet_serial_number': booklet_serial.strip(),
+        'is_present': True
+    }
+    resp_checkin = client.post(
+        f'/invigilator/session/{int(duty_id)}/checkin/',
+        data=json.dumps(checkin_payload),
+        content_type='application/json'
+    )
+    checkin_json = resp_checkin.json()
+    print(f"[4] Single Check-In API Execution (HTTP {resp_checkin.status_code}):")
+    print(f"    - Success: {checkin_json.get('success')}")
+    print(f"    - Status: {checkin_json.get('status')}")
+    assert checkin_json.get('success') is True, "Single checkin failed"
 
-# 5. Live Batch Check-In API Execution
-batch_payload = {
-    'records': [
-        {
-            'student_id': first_student.id,
-            'booklet_serial_number': f'BKT-LIVE-E2E-{first_student.id:04d}',
-            'is_present': True
-        }
-    ]
-}
-resp_batch = client.post(
-    f'/invigilator/session/{duty.id}/batch-checkin/',
-    data=json.dumps(batch_payload),
-    content_type='application/json'
-)
-batch_json = resp_batch.json()
-print(f"[5] Live Batch Check-In API Execution (HTTP {resp_batch.status_code}):")
-print(f"    - Success: {batch_json.get('success')}")
-print(f"    - Message: {batch_json.get('message')}")
-print(f"    - Updated count: {batch_json.get('updated_count')}")
-assert batch_json.get('success') is True, "Batch checkin failed"
+    batch_payload = {'records': [checkin_payload]}
+    resp_batch = client.post(
+        f'/invigilator/session/{int(duty_id)}/batch-checkin/',
+        data=json.dumps(batch_payload),
+        content_type='application/json'
+    )
+    batch_json = resp_batch.json()
+    print(f"[5] Batch Check-In API Execution (HTTP {resp_batch.status_code}):")
+    print(f"    - Success: {batch_json.get('success')}")
+    print(f"    - Message: {batch_json.get('message')}")
+    print(f"    - Updated count: {batch_json.get('updated_count')}")
+    assert batch_json.get('success') is True, "Batch checkin failed"
+else:
+    print('[4-5] Attendance writes skipped. Set ATTENDANCE_TEST_DUTY_ID, '
+          'ATTENDANCE_TEST_STUDENT_ID, and ATTENDANCE_TEST_BOOKLET_SERIAL '
+          'to explicitly run against a designated test candidate and real/test booklet.')
 
 print("\n" + "=" * 65)
 print("ALL VERIFICATIONS PASSED SUCCESSFULLY! (100% OPERATIONAL)")

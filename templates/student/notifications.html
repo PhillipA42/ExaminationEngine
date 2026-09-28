@@ -78,6 +78,7 @@
                             <div class="notif-icon
                                 {% if notif.notification_type == 'ELIGIBILITY_UPDATE' %}bg-warning bg-opacity-15 text-warning
                                 {% elif notif.notification_type == 'RESULTS_PUBLISHED' %}bg-success bg-opacity-15 text-success
+                                {% elif notif.notification_type == 'EXAM_REMINDER' %}bg-warning bg-opacity-15 text-warning
                                 {% elif notif.notification_type == 'TIMETABLE_PUBLISHED' or notif.notification_type == 'TIMETABLE_CHANGE' %}bg-primary bg-opacity-15 text-primary
                                 {% elif notif.notification_type == 'EXAM_PASS_READY' %}bg-info bg-opacity-15 text-info
                                 {% elif notif.notification_type == 'MALPRACTICE_FLAGGED' %}bg-danger bg-opacity-15 text-danger
@@ -88,6 +89,8 @@
                                     <i class="bi bi-shield-check"></i>
                                 {% elif notif.notification_type == 'RESULTS_PUBLISHED' %}
                                     <i class="bi bi-award"></i>
+                                {% elif notif.notification_type == 'EXAM_REMINDER' %}
+                                    <i class="bi bi-alarm"></i>
                                 {% elif notif.notification_type == 'TIMETABLE_PUBLISHED' or notif.notification_type == 'TIMETABLE_CHANGE' %}
                                     <i class="bi bi-calendar-event"></i>
                                 {% elif notif.notification_type == 'EXAM_PASS_READY' %}
@@ -125,7 +128,8 @@
                                     </span>
                                     {% if notif.related_link %}
                                         <a href="{{ notif.related_link }}" class="btn btn-link btn-sm p-0 text-primary" style="font-size:0.78rem;">
-                                            View Details <i class="bi bi-arrow-right-short"></i>
+                                            {% if notif.notification_type == 'EXAM_REMINDER' %}Navigate to venue{% else %}View Details{% endif %}
+                                            <i class="bi bi-arrow-right-short"></i>
                                         </a>
                                     {% endif %}
                                 </div>

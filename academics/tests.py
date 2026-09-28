@@ -1,18 +1,23 @@
 import io
 import csv
+from datetime import datetime, time
 from decimal import Decimal
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
+from django.core.management import call_command
 from django.test import TestCase, Client
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 from authentication.models import Role, UserRole
 from academics.models import (
     School, Department, Course, Unit, Lecturer, Student,
-    UnitRegistration, StudentMark, ResultSubmission, ResultWorkflowAudit
+    UnitRegistration, StudentMark, ResultSubmission, ResultWorkflowAudit, Notification
 )
 from locations.models import Campus, Building, Floor, Room
-from scheduling.models import ExaminationPeriod, Examination
+from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, StudentExamAllocation
 from invigilators.models import ExamAttendance
 from academics.results_services import BulkMarkUploadService, ResultWorkflowService
 from academics.eligibility_services import EligibilityService
@@ -377,6 +382,97 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertContains(response, 'View timetable')
         self.assertContains(response, 'View results')
 
+    def _allocate_cs_exam(self, student, exam_date, start_time):
+        schedule = ExamSchedule.objects.create(
+            examination=self.exam_cs,
+            exam_date=exam_date,
+            start_time=start_time,
+            end_time=time(12, 0),
+            status='PUBLISHED',
+        )
+        allocation = StudentExamAllocation.objects.create(
+            examination=self.exam_cs,
+            student=student,
+            room=self.room,
+            seat_number='A-01',
+        )
+        return schedule, allocation
+
+    def test_student_timetable_is_personal_and_links_to_venue_navigation(self):
+        schedule, allocation = self._allocate_cs_exam(
+            self.student1, datetime(2026, 10, 5).date(), time(9, 0)
+        )
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get('/student/timetable/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'CSC401')
+        self.assertContains(response, 'Software Architecture')
+        self.assertContains(response, '05 Oct 2026')
+        self.assertContains(response, self.room.name)
+        self.assertContains(response, f'/student/examination/{allocation.pk}/navigate/')
+        self.assertNotContains(response, self.student2.registration_number)
+
+    def test_exam_reminder_is_sent_one_day_before_with_personalized_navigation(self):
+        _, allocation = self._allocate_cs_exam(
+            self.student1, datetime(2026, 10, 5).date(), time(9, 0)
+        )
+        now = datetime(2026, 10, 4, 9, 0, tzinfo=ZoneInfo('Africa/Nairobi'))
+
+        with patch('academics.management.commands.send_exam_reminders.timezone.localtime', return_value=now):
+            call_command('send_exam_reminders', verbosity=0)
+            call_command('send_exam_reminders', verbosity=0)
+
+        reminders = Notification.objects.filter(
+            recipient=self.user_std1,
+            notification_type='EXAM_REMINDER',
+        )
+        self.assertEqual(reminders.count(), 1)
+        reminder = reminders.get()
+        self.assertIn('1 day', reminder.title)
+        self.assertIn('CSC401 — Software Architecture', reminder.message)
+        self.assertIn(self.room.name, reminder.message)
+        self.assertIn(self.building.name, reminder.message)
+        self.assertIn('09:00–12:00', reminder.message)
+        self.assertEqual(reminder.related_link, f'/student/examination/{allocation.pk}/navigate/')
+        self.assertFalse(Notification.objects.filter(recipient=self.user_std2, notification_type='EXAM_REMINDER').exists())
+
+    def test_exam_reminder_is_sent_one_hour_before(self):
+        self._allocate_cs_exam(
+            self.student1, datetime(2026, 10, 5).date(), time(10, 0)
+        )
+        now = datetime(2026, 10, 5, 9, 0, tzinfo=ZoneInfo('Africa/Nairobi'))
+
+        with patch('academics.management.commands.send_exam_reminders.timezone.localtime', return_value=now):
+            call_command('send_exam_reminders', verbosity=0)
+
+        reminder = Notification.objects.get(
+            recipient=self.user_std1,
+            notification_type='EXAM_REMINDER',
+        )
+        self.assertIn('1 hour', reminder.title)
+        self.assertIn('CSC401 — Software Architecture', reminder.message)
+        self.assertIn(self.room.name, reminder.message)
+        self.assertIn(self.building.name, reminder.message)
+        self.assertIn('10:00–12:00', reminder.message)
+
+    def test_student_venue_navigation_uses_building_coordinates_when_available(self):
+        _, allocation = self._allocate_cs_exam(
+            self.student1, datetime(2026, 10, 5).date(), time(9, 0)
+        )
+        self.building.latitude = '-0.678500'
+        self.building.longitude = '34.773500'
+        self.building.save(update_fields=['latitude', 'longitude'])
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get(f'/student/examination/{allocation.pk}/navigate/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'destination=-0.678500%2C34.773500')
+        self.assertNotContains(response, 'Student Union Gate')
+        self.assertNotContains(response, '0.6 km')
+
     def test_student_profile_page_is_read_only_and_authoritative(self):
         self.client.login(username='std001', password='Password123!')
 
@@ -396,6 +492,32 @@ class Milestone8ResultsWorkflowTests(TestCase):
         lecturer_response = self.client.post('/login/', {'username': 'lec001', 'password': 'Password123!'}, follow=False)
         self.assertEqual(lecturer_response.status_code, 302)
         self.assertRedirects(lecturer_response, '/invigilator/dashboard/', fetch_redirect_response=False)
+
+    def test_unified_login_ignores_invalid_next_destination(self):
+        response = self.client.post('/login/', {
+            'username': 'std001',
+            'password': 'Password123!',
+            'next': 'None',
+        }, follow=False)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/student/', fetch_redirect_response=False)
+
+        self.client.logout()
+        safe_response = self.client.post('/login/', {
+            'username': 'std001',
+            'password': 'Password123!',
+            'next': '/student/profile/',
+        }, follow=False)
+        self.assertRedirects(safe_response, '/student/profile/', fetch_redirect_response=False)
+
+        self.client.logout()
+        external_response = self.client.post('/login/', {
+            'username': 'std001',
+            'password': 'Password123!',
+            'next': 'https://example.invalid/phishing',
+        }, follow=False)
+        self.assertRedirects(external_response, '/student/', fetch_redirect_response=False)
 
     def test_non_owner_cannot_edit_submission_through_service(self):
         submission = ResultWorkflowService.get_or_create_submission(self.exam_cs, self.lecturer_cs)

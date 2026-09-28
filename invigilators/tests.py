@@ -1,3 +1,5 @@
+from datetime import date, time
+from unittest.mock import patch
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 import json
@@ -8,7 +10,7 @@ from academics.models import (
     UnitRegistration
 )
 from locations.models import Campus, Building, Floor, Room
-from scheduling.models import ExaminationPeriod, Examination, ExamRoomAllocation, StudentExamAllocation
+from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, ExamRoomAllocation, StudentExamAllocation
 from invigilators.models import InvigilatorDuty, ExamAttendance
 
 User = get_user_model()
@@ -51,6 +53,13 @@ class AttendanceMarkingWorkflowTests(TestCase):
             period=self.period,
             unit=self.unit,
             examination_type='FINAL'
+        )
+        self.schedule = ExamSchedule.objects.create(
+            examination=self.examination,
+            exam_date=date(2026, 10, 5),
+            start_time=time(9, 0),
+            end_time=time(12, 0),
+            status='PUBLISHED'
         )
 
         # Room Allocation
@@ -110,7 +119,8 @@ class AttendanceMarkingWorkflowTests(TestCase):
         self.assertTrue(any("You are not assigned as an invigilator" in m for m in messages_text))
 
 
-    def test_single_checkin_with_booklet_serial(self):
+    @patch('invigilators.web_views.InvigilationService.is_active', return_value=True)
+    def test_single_checkin_with_booklet_serial(self, _is_active):
         """Single check-in saves the physical booklet serial number and marks student present."""
         duty = InvigilatorDuty.objects.create(
             examination=self.examination,
@@ -138,7 +148,28 @@ class AttendanceMarkingWorkflowTests(TestCase):
         self.assertTrue(att.is_present)
         self.assertEqual(att.booklet_serial_number, 'BKT-CVE301-001')
 
-    def test_checkin_rejects_empty_booklet_when_present(self):
+    def test_student_cannot_self_check_in_attendance(self):
+        """Students must never be able to record attendance or booklet serials; only assigned lecturers may do so."""
+        duty = InvigilatorDuty.objects.create(
+            examination=self.examination,
+            lecturer=self.lecturer,
+            room=self.room
+        )
+        self.client.login(username=f'std_cve_1', password='Password123!')
+
+        url = f'/invigilator/session/{duty.id}/checkin/'
+        payload = {
+            'student_id': self.students[0].id,
+            'booklet_serial_number': 'BKT-SELF-CHECKIN-001',
+            'is_present': True
+        }
+        response = self.client.post(url, data=json.dumps(payload), content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('lecturer', response.content.decode().lower())
+        self.assertFalse(ExamAttendance.objects.filter(examination=self.examination, student=self.students[0]).exists())
+
+    @patch('invigilators.web_views.InvigilationService.is_active', return_value=True)
+    def test_checkin_rejects_empty_booklet_when_present(self, _is_active):
         """Check-in requires physical booklet serial number if student is marked present."""
         duty = InvigilatorDuty.objects.create(
             examination=self.examination,
@@ -158,7 +189,8 @@ class AttendanceMarkingWorkflowTests(TestCase):
         data = response.json()
         self.assertFalse(data['success'])
 
-    def test_checkin_marks_absent_cleanly(self):
+    @patch('invigilators.web_views.InvigilationService.is_active', return_value=True)
+    def test_checkin_marks_absent_cleanly(self, _is_active):
         """Marking a student absent assigns unique absent booklet identifier."""
         duty = InvigilatorDuty.objects.create(
             examination=self.examination,
@@ -180,7 +212,8 @@ class AttendanceMarkingWorkflowTests(TestCase):
         self.assertEqual(data['status'], 'ABSENT')
         self.assertTrue(data['booklet_serial_number'].startswith('ABSENT-'))
 
-    def test_batch_student_checkin(self):
+    @patch('invigilators.web_views.InvigilationService.is_active', return_value=True)
+    def test_batch_student_checkin(self, _is_active):
         """Batch check-in updates multiple students with booklet serial numbers in one transaction."""
         duty = InvigilatorDuty.objects.create(
             examination=self.examination,
@@ -217,7 +250,8 @@ class AttendanceMarkingWorkflowTests(TestCase):
         self.assertEqual(data['stats']['checked_in'], 2)
         self.assertEqual(data['stats']['absent'], 1)
 
-    def test_batch_checkin_rejects_duplicate_booklet_in_batch(self):
+    @patch('invigilators.web_views.InvigilationService.is_active', return_value=True)
+    def test_batch_checkin_rejects_duplicate_booklet_in_batch(self, _is_active):
         """Batch check-in warns/rejects duplicate booklet serial numbers submitted in the same batch."""
         duty = InvigilatorDuty.objects.create(
             examination=self.examination,
