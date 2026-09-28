@@ -253,15 +253,14 @@ def student_venue_navigation(request, allocation_id):
     building = room.building
     campus = building.campus
     if building.latitude is not None and building.longitude is not None:
-        maps_url = 'https://www.google.com/maps/dir/?' + urlencode({
-            'api': '1',
-            'destination': f'{building.latitude},{building.longitude}',
-        })
+        navigation_destination = f'{building.latitude},{building.longitude}'
     else:
-        maps_url = 'https://www.google.com/maps/search/?' + urlencode({
-            'api': '1',
-            'query': f'{building.name}, {campus.name}',
-        })
+        navigation_destination = f'{building.name}, {campus.name}'
+    maps_url = 'https://www.google.com/maps/dir/?' + urlencode({
+        'api': '1',
+        'destination': navigation_destination,
+        'travelmode': 'walking',
+    })
     context = {
         'student': student,
         'allocation': allocation,
@@ -269,6 +268,7 @@ def student_venue_navigation(request, allocation_id):
         'building': building,
         'campus': campus,
         'maps_url': maps_url,
+        'navigation_destination': navigation_destination,
     }
     return render(request, 'student/venue_navigation.html', context)
 

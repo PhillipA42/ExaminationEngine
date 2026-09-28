@@ -169,6 +169,12 @@ def session_roster(request, duty_id):
 
     examination = duty.examination
     room = duty.room
+    building = room.building
+    campus = building.campus
+    if building.latitude is not None and building.longitude is not None:
+        navigation_destination = f'{building.latitude},{building.longitude}'
+    else:
+        navigation_destination = f'{building.name}, {campus.name}'
     schedule = getattr(examination, 'schedule', None)
     session = ExaminationSession.objects.filter(examination=examination, room=room).first()
 
@@ -251,6 +257,7 @@ def session_roster(request, duty_id):
         'duty': duty,
         'examination': examination,
         'room': room,
+        'navigation_destination': navigation_destination,
         'schedule': schedule,
         'session': session,
         'roster_items': roster_items,

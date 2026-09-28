@@ -109,6 +109,21 @@ class AttendanceMarkingWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(f'/invigilator/session/{duty.id}/', response.url)
 
+    def test_lecturer_session_roster_has_location_navigation(self):
+        duty = InvigilatorDuty.objects.create(
+            examination=self.examination,
+            lecturer=self.lecturer,
+            room=self.room,
+        )
+        self.client.login(username='lecturer_cve', password='Password123!')
+
+        response = self.client.get(f'/invigilator/session/{duty.id}/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Navigate to hall')
+        self.assertContains(response, 'invigilatorNavigationPanel')
+        self.assertContains(response, f'{self.building.name}, {self.campus.name}')
+
     def test_lecturer_open_exam_attendance_when_not_assigned_shows_warning(self):
         """Lecturer who is not assigned to invigilate an exam room receives a clear warning."""
         self.client.login(username='lecturer_cve', password='Password123!')

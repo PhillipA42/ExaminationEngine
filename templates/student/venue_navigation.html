@@ -26,8 +26,20 @@
                 <div class="data-box"><div class="data-label">Campus</div><div class="data-value">{{ campus.name }}</div></div>
                 <div class="data-box"><div class="data-label">Floor</div><div class="data-value">{{ room.floor.name|default:'Main floor' }}</div></div>
                 <div class="data-box"><div class="data-label">Room</div><div class="data-value">{{ room.name }}</div></div>
-                <a href="{{ maps_url }}" target="_blank" rel="noopener noreferrer" class="primary-btn justify-content-center">
-                    <i class="bi bi-map"></i> Get directions to building
+                <button type="button" id="locateMeButton" class="primary-btn justify-content-center">
+                    <i class="bi bi-crosshair"></i> Use my current location
+                </button>
+                <div id="locationStatus" class="small text-muted" role="status" aria-live="polite">
+                    Your location is requested only after you select the button. It is used in your browser to build a walking route.
+                </div>
+                <div id="routeReady" class="d-none">
+                    <a id="walkingRouteLink" href="{{ maps_url }}" target="_blank" rel="noopener noreferrer" class="primary-btn justify-content-center">
+                        <i class="bi bi-sign-turn-right"></i> Open walking directions
+                    </a>
+                    <div id="routeOriginSummary" class="small text-muted mt-2"></div>
+                </div>
+                <a href="{{ maps_url }}" target="_blank" rel="noopener noreferrer" class="secondary-btn justify-content-center">
+                    <i class="bi bi-map"></i> Open map without my location
                 </a>
             </div>
         </div>
@@ -50,4 +62,58 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(() => {
+    const locateButton = document.getElementById('locateMeButton');
+    const status = document.getElementById('locationStatus');
+    const routeReady = document.getElementById('routeReady');
+    const routeLink = document.getElementById('walkingRouteLink');
+    const routeOriginSummary = document.getElementById('routeOriginSummary');
+    const destination = '{{ navigation_destination|escapejs }}';
+
+    if (!locateButton) return;
+
+    locateButton.addEventListener('click', () => {
+        routeReady.classList.add('d-none');
+        if (!navigator.geolocation) {
+            status.textContent = 'This browser does not provide location access. Open the map without your current location instead.';
+            return;
+        }
+
+        locateButton.disabled = true;
+        status.textContent = 'Requesting permission and locating your device…';
+        navigator.geolocation.getCurrentPosition((position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            const route = new URL('https://www.google.com/maps/dir/');
+            route.searchParams.set('api', '1');
+            route.searchParams.set('origin', `${latitude},${longitude}`);
+            route.searchParams.set('destination', destination);
+            route.searchParams.set('travelmode', 'walking');
+
+            routeLink.href = route.toString();
+            routeReady.classList.remove('d-none');
+            routeOriginSummary.textContent = `Starting point found (accuracy approximately ${Math.round(position.coords.accuracy)} m). Your coordinates are sent to Google Maps only when you open directions.`;
+            status.textContent = 'Current location found. Review and open the walking directions.';
+            locateButton.disabled = false;
+        }, (error) => {
+            const messages = {
+                1: 'Location permission was denied. Allow location access in your browser or open the map without your location.',
+                2: 'Your current location is unavailable. Check device location settings or open the map without your location.',
+                3: 'Location lookup timed out. Try again or open the map without your location.'
+            };
+            status.textContent = messages[error.code] || 'Could not read your location. Open the map without your location or try again.';
+            locateButton.disabled = false;
+        }, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 60000
+        });
+    });
+})();
+</script>
 {% endblock %}

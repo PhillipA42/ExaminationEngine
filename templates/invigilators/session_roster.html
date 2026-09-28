@@ -66,7 +66,20 @@
                     <i class="bi bi-printer"></i>
                     <span class="d-none d-sm-inline">Print Roster</span>
                 </button>
+                <button type="button" id="invigilatorLocateButton" class="btn btn-sm btn-primary d-flex align-items-center gap-1">
+                    <i class="bi bi-crosshair"></i>
+                    <span>Navigate to hall</span>
+                </button>
             </div>
+        </div>
+    </div>
+
+    <div class="col-12 d-none" id="invigilatorNavigationPanel" data-destination="{{ navigation_destination }}">
+        <div class="alert alert-info mb-0 d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+            <span id="invigilatorLocationStatus" role="status" aria-live="polite">Requesting your current location…</span>
+            <a id="invigilatorWalkingRoute" class="btn btn-sm btn-primary d-none" target="_blank" rel="noopener noreferrer" href="#">
+                <i class="bi bi-sign-turn-right"></i> Open walking directions
+            </a>
         </div>
     </div>
 
@@ -653,6 +666,45 @@
 
 {% block extra_js %}
 <script>
+    (() => {
+        const locateButton = document.getElementById('invigilatorLocateButton');
+        const panel = document.getElementById('invigilatorNavigationPanel');
+        const status = document.getElementById('invigilatorLocationStatus');
+        const routeLink = document.getElementById('invigilatorWalkingRoute');
+        if (!locateButton || !panel || !status || !routeLink) return;
+
+        locateButton.addEventListener('click', () => {
+            panel.classList.remove('d-none');
+            routeLink.classList.add('d-none');
+            if (!navigator.geolocation) {
+                status.textContent = 'This browser does not provide location access. Use your maps app and search for the assigned building.';
+                return;
+            }
+
+            locateButton.disabled = true;
+            status.textContent = 'Requesting permission and locating your device…';
+            navigator.geolocation.getCurrentPosition((position) => {
+                const route = new URL('https://www.google.com/maps/dir/');
+                route.searchParams.set('api', '1');
+                route.searchParams.set('origin', `${position.coords.latitude},${position.coords.longitude}`);
+                route.searchParams.set('destination', panel.dataset.destination);
+                route.searchParams.set('travelmode', 'walking');
+                routeLink.href = route.toString();
+                routeLink.classList.remove('d-none');
+                status.textContent = `Location found (accuracy approximately ${Math.round(position.coords.accuracy)} m). Coordinates are sent to Google Maps only when directions are opened.`;
+                locateButton.disabled = false;
+            }, (error) => {
+                const messages = {
+                    1: 'Location permission was denied. Allow access in your browser settings and try again.',
+                    2: 'Your current location is unavailable. Check device location settings and try again.',
+                    3: 'Location lookup timed out. Try again.'
+                };
+                status.textContent = messages[error.code] || 'Could not read your location. Try again.';
+                locateButton.disabled = false;
+            }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+        });
+    })();
+
     let activeFilter = 'all';
     let checkInModalInstance = null;
     let malpracticeModalInstance = null;
