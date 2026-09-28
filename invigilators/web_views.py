@@ -32,43 +32,10 @@ def lecturer_required(view_func):
 
 
 def invigilator_login(request):
-    """Invigilator login view."""
-    if request.user.is_authenticated and hasattr(request.user, 'lecturer_profile'):
-        return redirect('invigilator_dashboard')
-
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '').strip()
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            user_roles = set(user.user_roles.values_list('role__name', flat=True)) if hasattr(user, 'user_roles') else set()
-            is_authorized_staff = (
-                hasattr(user, 'lecturer_profile') or
-                user.is_superuser or
-                user.is_staff or
-                bool(user_roles & {'EXAM_OFFICER', 'ADMIN', 'DEAN', 'COD', 'LECTURER'})
-            )
-            if not is_authorized_staff:
-                messages.error(request, "Account found, but no Lecturer or Officer profile is associated with this username.")
-            else:
-                login(request, user)
-                messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
-                next_url = request.POST.get('next') or request.GET.get('next')
-                if not next_url:
-                    if 'EXAM_OFFICER' in user_roles:
-                        next_url = 'officer_results_dashboard'
-                    elif 'DEAN' in user_roles:
-                        next_url = 'dean_results_dashboard'
-                    elif 'COD' in user_roles:
-                        next_url = 'cod_results_dashboard'
-                    else:
-                        next_url = 'invigilator_dashboard'
-                return redirect(next_url)
-        else:
-            messages.error(request, "Invalid username or password. Please try again.")
-
-    return render(request, 'invigilators/login.html')
+    """Backward-compatible redirect to the unified credential-based login page."""
+    next_url = request.GET.get('next') or request.POST.get('next')
+    target = f"/login/?next={next_url}" if next_url else '/login/'
+    return redirect(target)
 
 
 def invigilator_logout(request):

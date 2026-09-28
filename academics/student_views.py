@@ -57,33 +57,20 @@ def student_required(view_func):
         if not request.user.is_authenticated:
             return redirect(f"/student/login/?next={request.path}")
         if not hasattr(request.user, 'student_profile') and not request.user.is_superuser:
-            return HttpResponseForbidden("Access restricted: You must have a registered Student profile.")
+            if hasattr(request.user, 'lecturer_profile'):
+                messages.info(request, "This account is registered for the Lecturer Portal. Redirected to your lecturer dashboard.")
+                return redirect('invigilator_dashboard')
+            messages.error(request, "This account does not have a registered Student profile. Please sign in with a student account.")
+            return redirect('student_login')
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
 
 def student_login(request):
-    """Student portal login view."""
-    if request.user.is_authenticated and hasattr(request.user, 'student_profile'):
-        return redirect('student_dashboard')
-
-    if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
-        password = request.POST.get('password', '').strip()
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            if not hasattr(user, 'student_profile') and not user.is_superuser:
-                messages.error(request, "Account found, but no Student profile is associated with this username.")
-            else:
-                login(request, user)
-                messages.success(request, f"Welcome, {user.get_full_name() or user.username}!")
-                next_url = request.POST.get('next') or request.GET.get('next') or 'student_dashboard'
-                return redirect(next_url)
-        else:
-            messages.error(request, "Invalid registration/username or password. Please try again.")
-
-    return render(request, 'student/login.html')
+    """Backward-compatible redirect to the single credential-based login page."""
+    next_url = request.GET.get('next') or request.POST.get('next')
+    target = f"/login/?next={next_url}" if next_url else '/login/'
+    return redirect(target)
 
 
 def student_logout(request):

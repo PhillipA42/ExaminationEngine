@@ -83,7 +83,7 @@ TEMPLATES = [
     },
 ]
 
-LOGIN_URL = '/invigilator/login/'
+LOGIN_URL = '/login/'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 

@@ -388,6 +388,15 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertContains(response, 'BSc Computer Science')
         self.assertNotContains(response, 'Edit profile')
 
+    def test_unified_login_routes_users_by_credentials(self):
+        student_response = self.client.post('/login/', {'username': 'std001', 'password': 'Password123!'}, follow=False)
+        self.assertEqual(student_response.status_code, 302)
+        self.assertRedirects(student_response, '/student/', fetch_redirect_response=False)
+
+        lecturer_response = self.client.post('/login/', {'username': 'lec001', 'password': 'Password123!'}, follow=False)
+        self.assertEqual(lecturer_response.status_code, 302)
+        self.assertRedirects(lecturer_response, '/invigilator/dashboard/', fetch_redirect_response=False)
+
     def test_non_owner_cannot_edit_submission_through_service(self):
         submission = ResultWorkflowService.get_or_create_submission(self.exam_cs, self.lecturer_cs)
         with self.assertRaises(ValidationError) as ctx:

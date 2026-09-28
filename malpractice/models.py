@@ -46,6 +46,7 @@ class MalpracticeEvidence(models.Model):
     uploaded_by = models.ForeignKey(Lecturer, null=True, on_delete=models.SET_NULL, related_name='uploaded_malpractice_evidence')
     checksum = models.CharField(max_length=64, editable=False, db_index=True, default='')
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    
 
     def __str__(self):
         return f"Evidence for Case #{self.case.case_number}"
