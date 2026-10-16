@@ -15,7 +15,7 @@
                         <h3 class="mb-0 fw-bold" style="letter-spacing:-0.04em; margin:0;">{{ student.user.get_full_name|default:student.user.username }}</h3>
                     </div>
                 </div>
-                <div class="chip-status status-eligible"><i class="bi bi-shield-check"></i> ERP synchronized</div>
+                <div class="chip-status status-eligible"><i class="bi bi-shield-check"></i> Academic record · read-only</div>
             </div>
         </div>
     </div>
@@ -31,7 +31,7 @@
                 <div class="data-box"><div class="data-label">School</div><div class="data-value">{{ student.school.name }}</div></div>
                 <div class="data-box"><div class="data-label">Department</div><div class="data-value">{{ student.department.name }}</div></div>
                 <div class="data-box"><div class="data-label">Year</div><div class="data-value">Year {{ student.year_of_study }}</div></div>
-                <div class="data-box"><div class="data-label">Current semester</div><div class="data-value">Semester {{ student.course.duration|default:1 }}</div></div>
+                <div class="data-box"><div class="data-label">Course duration</div><div class="data-value">{{ student.course.duration }} years</div></div>
                 <div class="data-box"><div class="data-label">Academic status</div><div class="data-value">{{ academic_status }}</div></div>
             </div>
         </div>
@@ -42,7 +42,7 @@
             <div class="page-kicker">Authoritative record</div>
             <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Read-only profile</h4>
             <div class="card-soft p-4">
-                <p class="mb-0 muted">Academic information is synchronized from the University ERP. This student portal is read-only and cannot be used to edit the official institutional record.</p>
+                <p class="mb-0 muted">Academic information is displayed from the student record linked to your account. The Student Portal is read-only; update requests must be handled through the university's authorized academic-record process.</p>
             </div>
         </div>
     </div>

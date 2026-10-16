@@ -17,7 +17,7 @@ from academics.models import (
     UnitRegistration, StudentMark, ResultSubmission, ResultWorkflowAudit, Notification
 )
 from locations.models import Campus, Building, Floor, Room
-from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, StudentExamAllocation
+from scheduling.models import ExaminationPeriod, Examination, ExamSchedule, ExamRoomAllocation, StudentExamAllocation
 from invigilators.models import ExamAttendance
 from academics.results_services import BulkMarkUploadService, ResultWorkflowService
 from academics.eligibility_services import EligibilityService
@@ -105,6 +105,15 @@ class Milestone8ResultsWorkflowTests(TestCase):
 
         self.exam_cs = Examination.objects.create(
             period=self.period, unit=self.unit_cs, examination_type='FINAL', status='SCHEDULED'
+        )
+        ExamRoomAllocation.objects.create(
+            examination=self.exam_cs, room=self.room, allocated_capacity=self.room.capacity
+        )
+        StudentExamAllocation.objects.create(
+            examination=self.exam_cs, student=self.student1, room=self.room, seat_number='A-01'
+        )
+        StudentExamAllocation.objects.create(
+            examination=self.exam_cs, student=self.student2, room=self.room, seat_number='A-02'
         )
 
         # 6. Unit Registrations
@@ -390,11 +399,10 @@ class Milestone8ResultsWorkflowTests(TestCase):
             end_time=time(12, 0),
             status='PUBLISHED',
         )
-        allocation = StudentExamAllocation.objects.create(
+        allocation, _ = StudentExamAllocation.objects.update_or_create(
             examination=self.exam_cs,
             student=student,
-            room=self.room,
-            seat_number='A-01',
+            defaults={'room': self.room, 'seat_number': 'A-01'},
         )
         return schedule, allocation
 
@@ -436,7 +444,12 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertIn(self.building.name, reminder.message)
         self.assertIn('09:00–12:00', reminder.message)
         self.assertEqual(reminder.related_link, f'/student/examination/{allocation.pk}/navigate/')
-        self.assertFalse(Notification.objects.filter(recipient=self.user_std2, notification_type='EXAM_REMINDER').exists())
+        second_student_reminder = Notification.objects.get(
+            recipient=self.user_std2,
+            notification_type='EXAM_REMINDER',
+        )
+        self.assertIn('CSC401 — Software Architecture', second_student_reminder.message)
+        self.assertIn(self.room.name, second_student_reminder.message)
 
     def test_exam_reminder_is_sent_one_hour_before(self):
         self._allocate_cs_exam(
@@ -483,6 +496,89 @@ class Milestone8ResultsWorkflowTests(TestCase):
         self.assertContains(response, 'School of Information Science')
         self.assertContains(response, 'BSc Computer Science')
         self.assertNotContains(response, 'Edit profile')
+
+    def test_student_cannot_view_another_students_exam_allocation(self):
+        _, allocation = self._allocate_cs_exam(
+            self.student2, datetime(2026, 10, 5).date(), time(9, 0)
+        )
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get(f'/student/examination/{allocation.pk}/')
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_notification_inbox_does_not_mark_items_read_implicitly(self):
+        notification = Notification.objects.create(
+            recipient=self.user_std1,
+            title='Timetable update',
+            message='Your published timetable is available.',
+            notification_type='TIMETABLE_PUBLISHED',
+        )
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get('/student/notifications/')
+
+        self.assertEqual(response.status_code, 200)
+        notification.refresh_from_db()
+        self.assertFalse(notification.is_read)
+
+    def test_student_can_only_mark_their_own_notification_read(self):
+        own_notification = Notification.objects.create(
+            recipient=self.user_std1, title='Own notice', message='Own message',
+            notification_type='TIMETABLE_PUBLISHED',
+        )
+        other_notification = Notification.objects.create(
+            recipient=self.user_std2, title='Private notice', message='Private message',
+            notification_type='TIMETABLE_PUBLISHED',
+        )
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.post(f'/student/notifications/{own_notification.pk}/read/')
+        other_response = self.client.post(f'/student/notifications/{other_notification.pk}/read/')
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(other_response.status_code, 302)
+        own_notification.refresh_from_db()
+        other_notification.refresh_from_db()
+        self.assertTrue(own_notification.is_read)
+        self.assertFalse(other_notification.is_read)
+
+    def test_student_attendance_page_is_read_only_and_scoped(self):
+        _, allocation = self._allocate_cs_exam(
+            self.student1, datetime(2026, 10, 5).date(), time(9, 0)
+        )
+        self.client.login(username='std001', password='Password123!')
+
+        response = self.client.get('/student/attendance/')
+        post_response = self.client.post('/student/attendance/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Present')
+        self.assertNotContains(response, 'BKT-CSC401-001')
+        self.assertEqual(post_response.status_code, 405)
+
+    def test_new_student_portal_pages_render_for_authenticated_student(self):
+        self.client.login(username='std001', password='Password123!')
+
+        for url in (
+            '/student/eligibility/',
+            '/student/history/',
+            '/student/help/',
+            '/student/navigate/',
+        ):
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+
+    def test_student_without_student_profile_cannot_use_superuser_preview(self):
+        staff_user = User.objects.create_superuser(
+            username='portal_admin', email='admin@example.test', password='Password123!'
+        )
+        self.client.force_login(staff_user)
+
+        response = self.client.get('/student/')
+
+        self.assertEqual(response.status_code, 403)
 
     def test_unified_login_routes_users_by_credentials(self):
         student_response = self.client.post('/login/', {'username': 'std001', 'password': 'Password123!'}, follow=False)

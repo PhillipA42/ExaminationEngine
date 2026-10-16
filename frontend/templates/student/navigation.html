@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Navigate to Venue{% endblock %}
+{% block page_title %}Navigate to venue{% endblock %}
+{% block content %}
+<p class="muted mb-4">Choose one of your upcoming published examinations to view its allocated building, floor and room directions.</p>
+<div class="row g-3">
+    {% for allocation in allocations %}
+    <div class="col-12 col-xl-6"><article class="card-custom p-4 h-100 d-flex flex-column">
+        <div class="page-kicker">{{ allocation.examination.period.name }}</div>
+        <h2 class="h5 fw-bold mb-2">{{ allocation.examination.unit.code }} — {{ allocation.examination.unit.name }}</h2>
+        <p class="mb-1">{% if allocation.examination.schedule %}{{ allocation.examination.schedule.exam_date|date:'l, d M Y' }} · {{ allocation.examination.schedule.start_time|time:'H:i' }}–{{ allocation.examination.schedule.end_time|time:'H:i' }}{% else %}Schedule details not yet available{% endif %}</p>
+        <p class="muted mb-3">{{ allocation.room.building.name }} · {{ allocation.room.floor.name|default:'Floor information unavailable' }} · {{ allocation.room.name }}</p>
+        <a class="primary-btn mt-auto align-self-start" href="{% url 'student_venue_navigation' allocation_id=allocation.id %}"><i class="bi bi-sign-turn-right" aria-hidden="true"></i> Open venue directions</a>
+    </article></div>
+    {% empty %}<div class="col-12"><div class="empty-state"><i class="bi bi-geo-alt fs-2" aria-hidden="true"></i><h2 class="h5 mt-3">No upcoming examination venues</h2><p class="mb-0">When an examination is published and allocated to you, you can open its venue directions here.</p></div></div>{% endfor %}
+</div>
+{% endblock %}

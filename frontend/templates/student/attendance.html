@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Status{% endblock %}
+{% block page_title %}Attendance status{% endblock %}
+{% block content %}
+<section class="mb-4">
+    <p class="muted mb-0">View attendance recorded by authorized examination staff. Attendance cannot be changed from the Student Portal.</p>
+</section>
+<div class="card-custom overflow-hidden">
+    {% if attendance_entries %}
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead class="table-light"><tr><th>Examination</th><th>Date</th><th>Venue</th><th>Attendance</th><th>Recorded</th></tr></thead>
+            <tbody>
+            {% for entry in attendance_entries %}
+                <tr>
+                    <td><a href="{% url 'student_exam_detail' allocation_id=entry.allocation.id %}"><strong>{{ entry.allocation.examination.unit.code }}</strong> — {{ entry.allocation.examination.unit.name }}</a></td>
+                    <td>{% if entry.schedule %}{{ entry.schedule.exam_date|date:'d M Y' }}{% else %}Not scheduled{% endif %}</td>
+                    <td>{{ entry.allocation.room.building.name }}, {{ entry.allocation.room.name }}</td>
+                    <td>{% if entry.attendance %}{% if entry.attendance.is_present %}<span class="student-status student-status--success">Present</span>{% else %}<span class="student-status student-status--danger">Absent</span>{% endif %}{% else %}<span class="student-status student-status--warning">Pending</span>{% endif %}</td>
+                    <td>{% if entry.attendance %}{{ entry.attendance.check_in_time|date:'d M Y, H:i' }}{% else %}Not yet recorded{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state m-3"><i class="bi bi-person-check fs-2" aria-hidden="true"></i><h2 class="h5 mt-3">No examination allocations yet</h2><p class="mb-0">Attendance will appear here for your published examination allocations.</p></div>
+    {% endif %}
+</div>
+{% endblock %}

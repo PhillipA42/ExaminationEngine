@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Examination History{% endblock %}
+{% block page_title %}Examination history{% endblock %}
+{% block content %}
+<div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4">
+    <p class="muted mb-0">A record of your past published examination allocations.</p>
+    <form method="get" class="exam-filter-form" aria-label="Filter examination history">
+        <div class="filter-field"><label for="history-period" class="form-label">Examination period</label><select class="form-select" id="history-period" name="period"><option value="">All periods</option>{% for period in period_options %}<option value="{{ period.id }}" {% if selected_period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% endfor %}</select></div>
+        <button class="primary-btn" type="submit">Apply</button><a class="secondary-btn" href="{% url 'student_history' %}">Clear</a>
+    </form>
+</div>
+<div class="row g-3">
+    {% for entry in history_entries %}{% with allocation=entry.allocation %}
+    <div class="col-12"><article class="card-custom p-3 p-md-4 d-flex flex-column flex-md-row justify-content-between gap-3">
+        <div><div class="page-kicker">{{ allocation.examination.period.name }}</div><h2 class="h5 mb-1"><span class="text-primary">{{ allocation.examination.unit.code }}</span> — {{ allocation.examination.unit.name }}</h2><p class="muted mb-1">{% if allocation.examination.schedule %}{{ allocation.examination.schedule.exam_date|date:'l, d M Y' }} · {{ allocation.examination.schedule.start_time|time:'H:i' }}–{{ allocation.examination.schedule.end_time|time:'H:i' }}{% else %}Schedule unavailable{% endif %}</p><p class="small muted mb-0">{{ allocation.room.building.name }}, {{ allocation.room.name }}</p></div>
+        <div class="d-flex flex-column align-items-md-end gap-2"><span class="student-status student-status--neutral">Past examination</span><span class="small">Attendance: {% if entry.attendance %}{% if entry.attendance.is_present %}Present{% else %}Absent{% endif %}{% else %}Pending{% endif %}</span><span class="small">Result: {% if entry.has_published_result %}Published{% else %}Not published{% endif %}</span><a href="{% url 'student_exam_detail' allocation_id=allocation.id %}" class="secondary-btn">View details</a></div>
+    </article></div>
+    {% endwith %}{% empty %}<div class="col-12"><div class="empty-state"><i class="bi bi-clock-history fs-2" aria-hidden="true"></i><h2 class="h5 mt-3">No past examinations found</h2><p class="mb-0">Past published allocations will appear here after their scheduled date.</p></div></div>{% endfor %}
+</div>
+{% if page_obj.paginator.num_pages > 1 %}<nav class="mt-4" aria-label="Examination history pages"><ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{% if selected_period %}period={{ selected_period }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+    {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{% if selected_period %}period={{ selected_period }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
+</ul></nav>{% endif %}
+{% endblock %}

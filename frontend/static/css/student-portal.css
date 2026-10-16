@@ -1,0 +1,113 @@
+:root {
+    --primary-blue: #2F80ED;
+    --header-blue: #66A9F2;
+    --academic-blue: #1456A0;
+    --secondary-blue: #4F94E8;
+    --pale-blue: #EAF4FF;
+    --soft-blue: #DCEEFF;
+    --very-light-blue: #F4F9FF;
+    --page-background: #F7FAFD;
+    --card-background: #FFFFFF;
+    --border-blue: #C9E0F7;
+    --primary-text: #1F2937;
+    --muted-text: #64748B;
+    --success: #159570;
+    --warning: #E9A23B;
+    --danger: #DC3545;
+}
+
+.notification-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border: 2px solid #66A9F2;
+    border-radius: 999px;
+    background: #DC3545;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 15px;
+    text-align: center;
+}
+
+.student-mobile-menu {
+    background: var(--pale-blue);
+}
+
+.student-mobile-menu .offcanvas-header {
+    border-bottom: 1px solid var(--border-blue);
+}
+
+.student-mobile-menu .sidebar-nav {
+    gap: 5px;
+}
+
+.student-mobile-menu .nav-link-item {
+    min-height: 44px;
+}
+
+.exam-filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: end;
+}
+
+.exam-filter-form .filter-field {
+    flex: 1 1 180px;
+}
+
+.notification-item.unread {
+    border-left: 4px solid var(--primary-blue);
+    background: var(--very-light-blue);
+}
+
+.student-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.student-status--success { background: #e9f8f2; border-color: #b7e6d5; color: #116c51; }
+.student-status--warning { background: #fff7e6; border-color: #f5dfad; color: #81550b; }
+.student-status--danger { background: #fdecec; border-color: #f2c2c7; color: #a52231; }
+.student-status--neutral { background: #eef3f8; border-color: #d5e0ea; color: #46576a; }
+
+:where(a, button, input, select):focus-visible {
+    outline: 3px solid var(--primary-blue);
+    outline-offset: 2px;
+}
+
+@media (max-width: 575.98px) {
+    .profile-meta { display: none; }
+    .topbar { gap: 0.5rem; }
+    .topbar-actions { gap: 0.5rem; }
+    .page-content { padding-bottom: 6rem; }
+    .exam-filter-form .filter-field { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media print {
+    @page { size: A4 portrait; margin: 12mm; }
+    .app-sidebar, .topbar, .navbar, .student-mobile-menu, footer,
+    .btn-print-controls, .no-print { display: none !important; }
+    .app-shell, .app-main { display: block !important; min-height: 0 !important; }
+    .page-content, main { margin: 0 !important; padding: 0 !important; }
+    .exam-pass-paper { break-inside: avoid; page-break-inside: avoid; }
+}

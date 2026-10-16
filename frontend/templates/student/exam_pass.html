@@ -43,7 +43,7 @@
             padding: 0;
         }
 
-        .navbar, footer, .btn-print-controls, .alert {
+        .navbar, footer, .btn-print-controls, .alert, .app-sidebar, .topbar {
             display: none !important;
         }
 
@@ -99,36 +99,38 @@
                 <i class="bi bi-download fs-5"></i>
                 <span class="fw-bold">Download PDF</span>
             </button>
-            <button type="button" class="btn btn-outline-secondary d-flex align-items-center gap-2 px-4" onclick="shareExamPass()">
-                <i class="bi bi-share fs-5"></i>
-                <span class="fw-bold">Share</span>
-            </button>
         </div>
     </div>
 
-    <!-- Official Printable Examination Pass Paper Document -->
+    <form method="get" class="exam-filter-form card-custom p-3 mb-4 btn-print-controls" aria-label="Select examination period for pass">
+        <div class="filter-field"><label for="pass-period" class="form-label">Examination period</label><select class="form-select" id="pass-period" name="period">{% for period in period_options %}<option value="{{ period.id }}" {% if selected_period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% empty %}<option value="">No published periods</option>{% endfor %}</select></div>
+        <button type="submit" class="primary-btn">View pass</button>
+        {% if allocations %}<a class="secondary-btn" href="{% url 'student_venue_navigation' allocation_id=allocations.0.id %}">Navigate to first venue</a>{% endif %}
+    </form>
+
+    {% if allocations %}
+    <!-- Printable examination pass generated from this student's current published allocations -->
     <div class="exam-pass-paper" id="printablePass">
         
         <!-- Document Header -->
         <div class="row align-items-center pass-header-border mb-3">
             <div class="col-3 text-center">
                 <div class="d-inline-flex align-items-center justify-content-center border border-2 border-dark rounded p-2" style="width: 80px; height: 80px;">
-                    <i class="bi bi-shield-shaded fs-1 text-dark"></i>
+                    <i class="bi bi-card-checklist fs-1 text-dark" aria-hidden="true"></i>
                 </div>
             </div>
 
             <div class="col-6 text-center">
-                <h4 class="fw-bold text-uppercase mb-0 letter-spacing-1 text-dark">University Examination Engine</h4>
-                <div class="fw-bold text-secondary small text-uppercase">Directorate of Examinations & Timetabling</div>
-                <h5 class="fw-extrabold text-uppercase text-primary mt-2 mb-0" style="letter-spacing: 0.05em;">Official Examination Pass</h5>
-                <div class="small text-muted font-monospace">{{ active_period.name|default:"2026/2027 Main Examinations" }}</div>
+                <h4 class="fw-bold text-uppercase mb-0 letter-spacing-1 text-dark">ExaminationEngine</h4>
+                <div class="fw-bold text-secondary small text-uppercase">Student examination pass</div>
+                <h5 class="fw-extrabold text-uppercase text-primary mt-2 mb-0" style="letter-spacing: 0.05em;">Examination Allocation Pass</h5>
+                <div class="small text-muted font-monospace">{{ active_period.name|default:"No published examination period" }}</div>
             </div>
 
             <div class="col-3 text-end">
                 <div class="security-badge text-center small font-monospace">
-                    <div style="font-size: 0.65rem;" class="text-uppercase text-muted">PASS AUTH REF</div>
-                    <strong class="text-dark">{{ verification_code }}</strong>
-                    <div class="text-muted text-break" style="font-size: 0.55rem;">{{ pass_token }}</div>
+                    <div style="font-size: 0.65rem;" class="text-uppercase text-muted">PASS STATUS</div>
+                    <strong class="text-dark">CURRENT ALLOCATIONS</strong>
                     <div class="text-muted" style="font-size: 0.65rem;">Issued: {{ generation_date|date:"d-M-Y" }}</div>
                 </div>
             </div>
@@ -163,22 +165,8 @@
             </div>
 
             <div class="col-12 col-sm-6 col-md-4">
-                <div class="text-muted" style="font-size: 0.75rem;">YEAR OF STUDY / STATUS</div>
-                <div class="fw-semibold text-dark">Year {{ student.year_of_study }} &bull;
-                    {% if eligibility %}
-                        {% if eligibility.overall_status == 'ELIGIBLE' %}
-                            <span class="badge bg-success">✅ ELIGIBLE</span>
-                        {% elif eligibility.overall_status == 'CONDITIONALLY_ELIGIBLE' %}
-                            <span class="badge bg-warning text-dark">⚠️ CONDITIONALLY ELIGIBLE</span>
-                        {% elif eligibility.overall_status == 'NOT_ELIGIBLE' %}
-                            <span class="badge bg-danger">❌ NOT ELIGIBLE</span>
-                        {% else %}
-                            <span class="badge bg-secondary">🕐 PENDING CLEARANCE</span>
-                        {% endif %}
-                    {% else %}
-                        <span class="badge bg-success">ELIGIBLE</span>
-                    {% endif %}
-                </div>
+                <div class="text-muted" style="font-size: 0.75rem;">YEAR OF STUDY</div>
+                <div class="fw-semibold text-dark">Year {{ student.year_of_study }}</div>
             </div>
 
         </div>
@@ -247,14 +235,12 @@
         <div class="p-3 border rounded mb-4 small bg-light" style="font-size: 0.75rem; line-height: 1.4;">
             <div class="fw-bold text-uppercase text-dark mb-1"><i class="bi bi-info-circle-fill text-primary me-1"></i> Examination Regulations & Candidate Instructions</div>
             <ol class="mb-0 ps-3">
-                <li>Candidates <strong>MUST</strong> present this printed Examination Pass together with a valid Student Identity Card to enter the examination room.</li>
-                <li>Candidates must be seated at least <strong>15 minutes</strong> before the scheduled examination start time.</li>
-                <li><strong>STRICTLY PROHIBITED:</strong> Mobile phones, smart watches, programmable calculators, unauthorized notes, or electronic storage devices. Possession of unauthorized materials constitutes academic malpractice and results in disciplinary sanction.</li>
-                <li>Candidates must ensure their physical booklet serial number is correctly captured by the Chief Invigilator upon issuing.</li>
+                <li>Bring your student identification and follow current examination instructions issued by the university.</li>
+                <li>Check the Student Portal for the latest published date, time and venue before travelling.</li>
             </ol>
         </div>
 
-        <!-- Signatures & Official Endorsement -->
+        <!-- Candidate acknowledgement -->
         <div class="row pt-3 text-center small text-dark mt-4 border-top">
             <div class="col-4">
                 <div class="border-bottom border-dark pb-3 mb-1" style="height: 40px;"></div>
@@ -263,25 +249,26 @@
             </div>
 
             <div class="col-4">
-                <div class="d-inline-flex align-items-center justify-content-center p-2 border border-secondary rounded font-monospace" style="font-size: 0.75rem;">
-                    <i class="bi bi-shield-check fs-3 me-2"></i>
-                    <div class="text-start">
-                        <div>OFFICIAL STAMP</div>
-                        <div class="text-success fw-bold">AUTHENTICATED</div>
-                    </div>
-                </div>
+                <div class="text-muted small">Generated from your current published examination allocations.</div>
             </div>
 
             <div class="col-4">
                 <div class="border-bottom border-dark pb-3 mb-1" style="height: 40px;">
-                    <span class="font-monospace text-primary fw-bold" style="font-size: 0.85rem;">[DIGITALLY ENDORSED]</span>
+                    <span class="font-monospace text-muted" style="font-size: 0.85rem;">&nbsp;</span>
                 </div>
-                <div class="fw-bold">Director of Examinations</div>
-                <div class="text-muted" style="font-size: 0.7rem;">University Examination Board</div>
+                <div class="fw-bold">Student acknowledgement</div>
+                <div class="text-muted" style="font-size: 0.7rem;">Signature</div>
             </div>
         </div>
 
     </div>
+    {% else %}
+    <div class="empty-state" role="status">
+        <i class="bi bi-card-heading fs-2" aria-hidden="true"></i>
+        <h2 class="h5 mt-3">No examination pass is available</h2>
+        <p class="mb-0">A pass will be available when you have an examination allocation in a published examination period.</p>
+    </div>
+    {% endif %}
 
 </div>
 {% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Help and Support{% endblock %}
+{% block page_title %}Help &amp; support{% endblock %}
+{% block content %}
+<p class="muted mb-4">Quick guidance for common examination tasks. For official decisions, use university-approved channels.</p>
+<div class="row g-3">
+    <div class="col-12 col-lg-6"><section class="card-custom p-4 h-100"><h2 class="h5 fw-bold"><i class="bi bi-card-heading text-primary me-2" aria-hidden="true"></i>Viewing your examination pass</h2><p class="mb-3">Open Examination Pass to view the details for your published allocations. Use Print and select your device's “Save as PDF” option if you need a PDF copy.</p><a class="secondary-btn" href="{% url 'student_exam_pass' %}">Open examination pass</a></section></div>
+    <div class="col-12 col-lg-6"><section class="card-custom p-4 h-100"><h2 class="h5 fw-bold"><i class="bi bi-geo-alt text-primary me-2" aria-hidden="true"></i>Finding your examination venue</h2><p class="mb-3">Open an examination from your timetable and choose Navigate. Building coordinates are used when available; indoor directions may be limited to the saved floor and room details.</p><a class="secondary-btn" href="{% url 'student_timetable' %}">Open timetable</a></section></div>
+    <div class="col-12 col-lg-6"><section class="card-custom p-4 h-100"><h2 class="h5 fw-bold"><i class="bi bi-shield-check text-primary me-2" aria-hidden="true"></i>Understanding eligibility</h2><p class="mb-0">Eligibility statuses come from the system's available examination and clearance records. A pending or unavailable result is not the same as being eligible. Contact the Examination Office through official university channels if your status needs review.</p></section></div>
+    <div class="col-12 col-lg-6"><section class="card-custom p-4 h-100"><h2 class="h5 fw-bold"><i class="bi bi-calendar-event text-primary me-2" aria-hidden="true"></i>Timetable or venue changes</h2><p class="mb-0">Check your timetable and notifications regularly for current published details. If the displayed information appears incorrect, contact the Examination Office using the university's official contact directory.</p></section></div>
+    <div class="col-12"><section class="card-soft p-4"><h2 class="h6 fw-bold">Account and privacy</h2><p class="mb-0">Your academic profile is read-only and linked to your authenticated account. Do not share your password, examination pass verification link, or personal device access with others.</p></section></div>
+</div>
+{% endblock %}

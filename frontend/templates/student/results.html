@@ -3,6 +3,10 @@
 {% block title %}My Examination Results{% endblock %}
 
 {% block content %}
+<form method="get" class="exam-filter-form card-custom p-3 mb-3" aria-label="Filter published results">
+    <div class="filter-field"><label for="results-period" class="form-label">Examination period</label><select class="form-select" id="results-period" name="period"><option value="">All periods</option>{% for period in period_options %}<option value="{{ period.id }}" {% if selected_period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% endfor %}</select></div>
+    <button class="primary-btn" type="submit">Apply</button><a class="secondary-btn" href="{% url 'student_results' %}">Clear</a>
+</form>
 <!-- Results Header Card -->
 <div class="card card-custom border-0 shadow-sm mb-4">
     <div class="card-body p-4">
@@ -14,11 +18,12 @@
                     </div>
                     <div>
                         <h4 class="fw-bold mb-1 text-dark">
-                            Official Academic Results & Transcript
+                            Published Examination Results
                         </h4>
                         <p class="text-muted mb-0 small">
                             Candidate: <strong>{{ student.user.get_full_name }}</strong> &bull; Reg No: <strong class="font-monospace text-primary">{{ student.registration_number }}</strong> &bull; Program: <strong>{{ student.course.name }}</strong>
                         </p>
+                        <p class="text-muted small mb-0 mt-1">Only marks published through the examination results workflow are shown here; contact the university for an authoritative transcript.</p>
                     </div>
                 </div>
             </div>
@@ -54,7 +59,7 @@
     <div class="col-md-3 col-6">
         <div class="card card-custom p-3 border-0 bg-white shadow-sm">
             <small class="text-muted text-uppercase fw-semibold d-block">Mean Performance</small>
-            <h3 class="fw-bold text-primary mb-0 mt-1">{{ average_score }}%</h3>
+            <h3 class="fw-bold text-primary mb-0 mt-1">{% if average_score != None %}{{ average_score }}%{% else %}—{% endif %}</h3>
         </div>
     </div>
 </div>

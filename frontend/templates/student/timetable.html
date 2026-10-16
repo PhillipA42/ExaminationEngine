@@ -99,8 +99,8 @@
                     <div class="d-flex align-items-center justify-content-between">
                         <div>
                             <div class="text-muted small fw-medium">Academic Period</div>
-                            <div class="fw-bold text-dark text-truncate" style="max-width: 140px;" title="{{ active_period.name|default:'2026/2027 Main Exams' }}">
-                                {{ active_period.academic_year|default:"2026/2027" }} Sem {{ active_period.semester|default:1 }}
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 140px;" title="{{ active_period.name|default:'No published period' }}">
+                                {% if active_period %}{{ active_period.academic_year }} Sem {{ active_period.semester }}{% else %}Not available{% endif %}
                             </div>
                         </div>
                         <div class="bg-secondary bg-opacity-10 text-secondary p-3 rounded-3">
@@ -154,6 +154,12 @@
                 <input type="text" id="timetableSearchInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Filter by Unit Code or Name..." onkeyup="filterTimetable()">
             </div>
         </div>
+
+        <form method="get" class="exam-filter-form card-custom p-3 mb-3" aria-label="Filter examinations">
+            <div class="filter-field"><label for="filter-period" class="form-label">Examination period</label><select class="form-select" id="filter-period" name="period"><option value="">All published periods</option>{% for period in period_options %}<option value="{{ period.id }}" {% if selected_period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% endfor %}</select></div>
+            <div class="filter-field"><label for="filter-status" class="form-label">Date</label><select class="form-select" id="filter-status" name="status"><option value="">All examinations</option><option value="upcoming" {% if selected_status == 'upcoming' %}selected{% endif %}>Upcoming</option><option value="past" {% if selected_status == 'past' %}selected{% endif %}>Past</option></select></div>
+            <button type="submit" class="primary-btn">Apply filters</button><a class="secondary-btn" href="{% url 'student_timetable' %}">Clear</a>
+        </form>
 
         {% if timetable_items %}
         

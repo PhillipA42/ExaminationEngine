@@ -25,14 +25,14 @@
             <div class="page-kicker">Session summary</div>
             <h4 class="fw-bold mb-4" style="letter-spacing:-0.03em;">Examination information</h4>
             <div class="data-grid">
-                <div class="data-box"><div class="data-label">Date</div><div class="data-value">{{ schedule.exam_date|date:"d M Y" }}</div></div>
-                <div class="data-box"><div class="data-label">Time</div><div class="data-value">{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}</div></div>
+                <div class="data-box"><div class="data-label">Date</div><div class="data-value">{% if schedule %}{{ schedule.exam_date|date:"d M Y" }}{% else %}Not scheduled{% endif %}</div></div>
+                <div class="data-box"><div class="data-label">Time</div><div class="data-value">{% if schedule %}{{ schedule.start_time|time:"H:i" }} - {{ schedule.end_time|time:"H:i" }}{% else %}Not available{% endif %}</div></div>
                 <div class="data-box"><div class="data-label">Duration</div><div class="data-value">{{ exam.duration_minutes }} minutes</div></div>
-                <div class="data-box"><div class="data-label">Eligibility</div><div class="data-value">{{ eligibility.overall_status|default:'ELIGIBLE' }}</div></div>
+                <div class="data-box"><div class="data-label">Eligibility</div><div class="data-value">{% if eligibility %}{{ eligibility.overall_status|title|cut:'_' }}{% else %}Unavailable — try again later{% endif %}</div></div>
                 <div class="data-box"><div class="data-label">Venue</div><div class="data-value">{{ room.building.name }}</div></div>
                 <div class="data-box"><div class="data-label">Floor</div><div class="data-value">{{ room.floor.name|default:'Main floor' }}</div></div>
                 <div class="data-box"><div class="data-label">Room</div><div class="data-value">{{ room.name }}</div></div>
-                <div class="data-box"><div class="data-label">Status</div><div class="data-value">{{ exam.status }}</div></div>
+                <div class="data-box"><div class="data-label">Examination status</div><div class="data-value">{{ exam.get_status_display|default:exam.status }}</div></div>
             </div>
         </div>
     </div>
@@ -42,7 +42,9 @@
             <div class="page-kicker">Quick actions</div>
             <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Next steps</h4>
             <div class="summary-stack">
-                <a href="{% url 'student_exam_pass' %}" class="action-card"><span><strong>View examination pass</strong><br><small class="muted">Official university pass</small></span><i class="bi bi-arrow-right"></i></a>
+                <a href="{% url 'student_exam_pass' %}" class="action-card"><span><strong>View examination pass</strong><br><small class="muted">Published examination allocations</small></span><i class="bi bi-arrow-right"></i></a>
+                <a href="{% url 'student_eligibility' %}" class="action-card"><span><strong>View eligibility</strong><br><small class="muted">Read-only status from examination records</small></span><i class="bi bi-arrow-right"></i></a>
+                    <a href="{% url 'student_attendance' %}" class="action-card"><span><strong>View attendance status</strong><br><small class="muted">Attendance as recorded by authorized staff</small></span><i class="bi bi-arrow-right"></i></a>
                 <a href="{% url 'student_venue_navigation' allocation_id=allocation.id %}" class="action-card"><span><strong>Navigate to building</strong><br><small class="muted">Campus location guidance</small></span><i class="bi bi-arrow-right"></i></a>
             </div>
         </div>

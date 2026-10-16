@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{% static 'css/student-portal.css' %}">
 
     <style>
         :root {
@@ -144,6 +146,12 @@
         .nav-link-item:hover {
             background: var(--ksu-soft);
             color: var(--ksu-primary-dark);
+        }
+
+        .nav-link-item:focus-visible, .icon-button:focus-visible, .quick-action:focus-visible,
+        .primary-btn:focus-visible, .secondary-btn:focus-visible, .ghost-btn:focus-visible {
+            outline: 3px solid var(--ksu-primary);
+            outline-offset: 2px;
         }
 
         .nav-link-item.active {
@@ -602,15 +610,21 @@
 
             <nav class="sidebar-nav" aria-label="Student navigation">
                 <a href="{% url 'student_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i> Dashboard</a>
-                <a href="{% url 'student_timetable' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i> My Examinations</a>
+                <a href="{% url 'student_examinations' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_examinations' %}active{% endif %}"><i class="bi bi-journal-check"></i> My Examinations</a>
+                <a href="{% url 'student_timetable' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i> Timetable</a>
+                <a href="{% url 'student_eligibility' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_eligibility' %}active{% endif %}"><i class="bi bi-shield-check"></i> Eligibility</a>
                 <a href="{% url 'student_exam_pass' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_exam_pass' %}active{% endif %}"><i class="bi bi-card-heading"></i> Examination Pass</a>
+                <a href="{% url 'student_navigation' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_navigation' %}active{% endif %}"><i class="bi bi-geo-alt"></i> Navigate to Venue</a>
                 <a href="{% url 'student_results' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_results' %}active{% endif %}"><i class="bi bi-award"></i> Results</a>
                 <a href="{% url 'student_notifications' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}"><i class="bi bi-bell"></i> Notifications</a>
+                <a href="{% url 'student_attendance' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_attendance' %}active{% endif %}"><i class="bi bi-person-check"></i> Attendance</a>
+                <a href="{% url 'student_history' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_history' %}active{% endif %}"><i class="bi bi-clock-history"></i> Exam History</a>
+                <a href="{% url 'student_help' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_help' %}active{% endif %}"><i class="bi bi-question-circle"></i> Help &amp; Support</a>
             </nav>
 
             <div class="sidebar-footer">
                 <a href="{% url 'student_profile' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_profile' %}active{% endif %}"><i class="bi bi-person-circle"></i> Profile</a>
-                <a href="{% url 'student_logout' %}" class="nav-link-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                <form method="post" action="{% url 'student_logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
             </div>
         </aside>
 
@@ -621,17 +635,18 @@
                     <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
                 </div>
                 <div class="topbar-actions">
-                    <button class="icon-button" aria-label="Notifications">
+                    <a class="icon-button" aria-label="Notifications{% if student_unread_notifications %}, {{ student_unread_notifications }} unread{% endif %}" href="{% url 'student_notifications' %}">
                         <i class="bi bi-bell"></i>
-                        <span class="badge-dot"></span>
-                    </button>
-                    <div class="profile-pill">
+                        {% if student_unread_notifications %}<span class="notification-count">{{ student_unread_notifications }}</span>{% endif %}
+                    </a>
+                    <a class="profile-pill" href="{% url 'student_profile' %}" aria-label="Open student profile">
                         <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
                         <div class="profile-meta">
                             <strong>{{ user.get_full_name|default:user.username }}</strong>
                             <small>{{ user.student_profile.registration_number }}</small>
                         </div>
-                    </div>
+                    </a>
+                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu" aria-label="Open student navigation"><i class="bi bi-list"></i></button>
                 </div>
             </header>
 
@@ -676,13 +691,14 @@
                 </div>
                 <div class="topbar-actions">
                     <button class="icon-button" aria-label="Notifications"><i class="bi bi-bell"></i><span class="badge-dot"></span></button>
-                    <div class="profile-pill">
+                    <a class="profile-pill" href="{% url 'lecturer_profile' %}" aria-label="Open lecturer profile">
                         <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
                         <div class="profile-meta">
                             <strong>{{ user.get_full_name|default:user.username }}</strong>
                             <small>{{ user.lecturer_profile.staff_number }} · Lecturer</small>
                         </div>
-                    </div>
+                    </a>
+                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#lecturerMobileMenu" aria-controls="lecturerMobileMenu" aria-label="Open lecturer navigation"><i class="bi bi-list"></i></button>
                 </div>
             </header>
             <main class="page-content">
@@ -732,11 +748,34 @@
                 <a href="{% url 'student_dashboard' %}" class="btn btn-link text-dark p-2"><i class="bi bi-house d-block fs-5"></i><small>Home</small></a>
                 <a href="{% url 'student_timetable' %}" class="btn btn-link text-dark p-2"><i class="bi bi-calendar3 d-block fs-5"></i><small>Exams</small></a>
                 <a href="{% url 'student_exam_pass' %}" class="btn btn-link text-dark p-2"><i class="bi bi-card-heading d-block fs-5"></i><small>Pass</small></a>
-                <a href="{% url 'student_results' %}" class="btn btn-link text-dark p-2"><i class="bi bi-award d-block fs-5"></i><small>Results</small></a>
-                <a href="{% url 'student_profile' %}" class="btn btn-link text-dark p-2"><i class="bi bi-person-circle d-block fs-5"></i><small>More</small></a>
+                <a href="{% url 'student_notifications' %}" class="btn btn-link text-dark p-2"><i class="bi bi-bell d-block fs-5"></i><small>Alerts</small></a>
+                <button type="button" class="btn btn-link text-dark p-2" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu"><i class="bi bi-three-dots d-block fs-5"></i><small>More</small></button>
             </div>
         </div>
     </nav>
+    <div class="offcanvas offcanvas-start student-mobile-menu d-lg-none" tabindex="-1" id="studentMobileMenu" aria-labelledby="studentMobileMenuLabel">
+        <div class="offcanvas-header">
+            <h2 class="offcanvas-title h5" id="studentMobileMenuLabel">Student Portal</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close navigation"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav class="sidebar-nav" aria-label="Mobile student navigation">
+                <a href="{% url 'student_dashboard' %}" class="nav-link-item"><i class="bi bi-house-door"></i> Dashboard</a>
+                <a href="{% url 'student_examinations' %}" class="nav-link-item"><i class="bi bi-journal-check"></i> My Examinations</a>
+                <a href="{% url 'student_timetable' %}" class="nav-link-item"><i class="bi bi-calendar3"></i> Timetable</a>
+                <a href="{% url 'student_eligibility' %}" class="nav-link-item"><i class="bi bi-shield-check"></i> Eligibility</a>
+                <a href="{% url 'student_exam_pass' %}" class="nav-link-item"><i class="bi bi-card-heading"></i> Examination Pass</a>
+                <a href="{% url 'student_navigation' %}" class="nav-link-item"><i class="bi bi-geo-alt"></i> Navigate to Venue</a>
+                <a href="{% url 'student_results' %}" class="nav-link-item"><i class="bi bi-award"></i> Results</a>
+                <a href="{% url 'student_notifications' %}" class="nav-link-item"><i class="bi bi-bell"></i> Notifications</a>
+                <a href="{% url 'student_attendance' %}" class="nav-link-item"><i class="bi bi-person-check"></i> Attendance</a>
+                <a href="{% url 'student_history' %}" class="nav-link-item"><i class="bi bi-clock-history"></i> Exam History</a>
+                <a href="{% url 'student_profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> My Profile</a>
+                <a href="{% url 'student_help' %}" class="nav-link-item"><i class="bi bi-question-circle"></i> Help &amp; Support</a>
+                <form method="post" action="{% url 'student_logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+            </nav>
+        </div>
+    </div>
     {% elif user.is_authenticated and user.lecturer_profile %}
             </main>
         </div>

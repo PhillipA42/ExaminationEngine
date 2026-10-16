@@ -8,10 +8,7 @@
         transition: background-color 0.15s ease, transform 0.1s ease;
         border-left: 4px solid transparent;
     }
-    .notification-item.unread {
-        border-left-color: var(--ksu-primary);
-        background-color: rgba(79, 70, 229, 0.04);
-    }
+    .notification-item.unread { border-left-color: var(--ksu-primary); background-color: var(--very-light-blue, #F4F9FF); }
     .notification-item:hover {
         transform: translateX(2px);
     }
@@ -56,14 +53,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <a href="{% url 'student_timetable' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
-                        <i class="bi bi-arrow-left"></i> Back to Dashboard
-                    </a>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+                    {% if unread_count %}<form method="post" action="{% url 'student_notifications_read_all' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm" type="submit">Mark all read</button></form>{% endif %}
+                    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Dashboard</a>
                 </div>
             </div>
         </div>
     </div>
+
+    <form method="get" class="exam-filter-form card-custom p-3 mb-3" aria-label="Filter notifications">
+        <div class="filter-field"><label for="notification-read" class="form-label">Read status</label><select id="notification-read" name="read" class="form-select"><option value="">All</option><option value="unread" {% if selected_read_filter == 'unread' %}selected{% endif %}>Unread</option><option value="read" {% if selected_read_filter == 'read' %}selected{% endif %}>Read</option></select></div>
+        <div class="filter-field"><label for="notification-type" class="form-label">Notification type</label><select id="notification-type" name="type" class="form-select"><option value="">All types</option>{% for code, label in notification_types %}<option value="{{ code }}" {% if selected_type_filter == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+        <button class="primary-btn" type="submit">Filter</button><a class="secondary-btn" href="{% url 'student_notifications' %}">Clear</a>
+    </form>
 
     <!-- Notifications List -->
     <div class="card card-custom border-0 shadow-sm">
@@ -132,6 +134,7 @@
                                             <i class="bi bi-arrow-right-short"></i>
                                         </a>
                                     {% endif %}
+                                    {% if not notif.is_read %}<form method="post" action="{% url 'student_notification_read' notification_id=notif.id %}">{% csrf_token %}<button type="submit" class="btn btn-link btn-sm p-0">Mark as read</button></form>{% endif %}
                                 </div>
                             </div>
                         </div>
