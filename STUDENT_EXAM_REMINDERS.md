@@ -7,7 +7,7 @@ The `send_exam_reminders` Django management command creates an in-app notificati
 From the project root, run:
 
 ```powershell
-.\venv\Scripts\python.exe manage.py send_exam_reminders --window-minutes 5
+.\venv\Scripts\python.exe backend\manage.py send_exam_reminders --window-minutes 5
 ```
 
 Run it every minute so both reminder times are handled promptly. The five-minute window is a short catch-up allowance if a scheduled run starts late; reminders outside that window are not sent.
@@ -17,8 +17,8 @@ Run it every minute so both reminder times are handled promptly. The five-minute
 Create a task with:
 
 - **Program/script:** the project's `venv\Scripts\python.exe`
-- **Arguments:** `manage.py send_exam_reminders --window-minutes 5`
-- **Start in:** the project root (the directory containing `manage.py`)
+- **Arguments:** `backend\manage.py send_exam_reminders --window-minutes 5`
+- **Start in:** the project root (the directory containing `backend`)
 - **Trigger:** repeat every 1 minute indefinitely
 - **Action:** start the program whether or not the user is logged in, using the same Windows account/environment that can access the application's database and settings
 
