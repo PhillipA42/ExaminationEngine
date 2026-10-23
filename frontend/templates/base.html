@@ -587,21 +587,149 @@
             .page-content { padding: 18px 16px 84px 16px; }
             .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+            /* Student navigation stays available as an icon rail on small screens. */
+            .student-app-shell {
+                display: block;
+            }
+            .student-app-shell .app-sidebar {
+                display: flex;
+                position: fixed;
+                z-index: 6;
+                top: 88px;
+                bottom: 0;
+                left: 0;
+                width: 72px;
+                height: auto;
+                overflow-y: auto;
+                padding: 12px 8px;
+                background: #3f70b7;
+                border: 0;
+                color: #fff;
+            }
+            .student-app-shell .brand-lockup {
+                display: none;
+            }
+            .student-app-shell .sidebar-nav,
+            .student-app-shell .sidebar-footer {
+                gap: 6px;
+            }
+            .student-app-shell .sidebar-footer {
+                border-color: rgba(255, 255, 255, 0.25);
+            }
+            .student-app-shell .app-sidebar .nav-link-item {
+                width: 54px;
+                min-height: 48px;
+                justify-content: center;
+                padding: 10px 0;
+                overflow: hidden;
+                border-radius: 8px;
+                color: #fff;
+                font-size: 0;
+                line-height: 0;
+            }
+            .student-app-shell .app-sidebar .nav-link-item i {
+                width: auto;
+                font-size: 1.2rem;
+                line-height: 1;
+            }
+            .student-app-shell .app-sidebar .nav-link-item:hover {
+                background: rgba(255, 255, 255, 0.16);
+                color: #fff;
+            }
+            .student-app-shell .app-sidebar .nav-link-item.active {
+                background: #84301e;
+                border-color: rgba(255, 255, 255, 0.18);
+                color: #fff;
+            }
+            .student-app-shell .app-main {
+                width: 100%;
+            }
+            .student-app-shell .topbar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-areas: "brand actions" "title title";
+                gap: 0 12px;
+                height: auto;
+                min-height: 88px;
+                padding: 8px 16px;
+                background: #fff;
+                border-color: #e2e8f0;
+                color: var(--ksu-primary-dark);
+            }
+            .student-mobile-brand {
+                grid-area: brand;
+                display: flex !important;
+                align-items: center;
+                gap: 10px;
+                min-width: 0;
+            }
+            .student-mobile-brand a {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                color: var(--ksu-primary-dark);
+                font-weight: 800;
+                letter-spacing: -0.03em;
+            }
+            .student-mobile-brand .brand-mark {
+                width: 38px;
+                height: 38px;
+                flex: 0 0 38px;
+            }
+            .student-app-shell .mobile-page-heading {
+                grid-area: title;
+            }
+            .student-app-shell .topbar .page-title,
+            .student-app-shell .topbar .icon-button {
+                color: var(--ksu-primary-dark);
+            }
+            .student-app-shell .topbar-actions {
+                grid-area: actions;
+                gap: 8px;
+            }
+            .student-app-shell .topbar .icon-button {
+                background: #fff;
+                border-color: #e2e8f0;
+            }
+            .student-app-shell .topbar .profile-pill {
+                padding: 4px;
+                border: 0;
+                background: transparent;
+            }
+            .student-app-shell .topbar .profile-avatar {
+                width: 36px;
+                height: 36px;
+                border: 1px solid #e2e8f0;
+                border-radius: 50%;
+            }
+            .student-app-shell .page-content {
+                margin-left: 72px;
+                padding: 18px 16px 36px;
+            }
+            .student-app-shell .mobile-student-bottom-nav {
+                display: none !important;
+            }
         }
 
         @media (max-width: 575.98px) {
             .page-kicker { display: none; }
             .info-grid, .quick-grid, .data-grid { grid-template-columns: 1fr; }
-            .topbar-actions .profile-pill { padding: 6px 8px; }
+            .student-app-shell .topbar-actions .profile-meta { display: none; }
             .page-title { font-size: 1.15rem; }
             .next-exam-panel { padding: 20px 16px; }
+            .student-app-shell .page-content { padding: 14px 12px 28px; }
+            .student-app-shell .hero-card { padding: 18px 16px; }
+            .student-app-shell .hero-card h2 { font-size: 1.55rem; }
+            .student-app-shell .exam-item { align-items: flex-start; flex-direction: column; }
+            .student-app-shell .exam-meta { text-align: left; }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% if user.is_authenticated and user.student_profile %}
-    <div class="app-shell">
+    <div class="app-shell student-app-shell">
         <aside class="app-sidebar">
             <div class="brand-lockup">
                 <div class="brand-mark"><i class="bi bi-mortarboard-fill"></i></div>
@@ -630,7 +758,14 @@
 
         <div class="app-main">
             <header class="topbar">
-                <div>
+                <div class="student-mobile-brand d-none">
+                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu" aria-label="Open student navigation"><i class="bi bi-list"></i></button>
+                    <a href="{% url 'student_dashboard' %}" aria-label="Edunex student dashboard">
+                        <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
+                        <span>Edunex</span>
+                    </a>
+                </div>
+                <div class="mobile-page-heading">
                     <div class="page-kicker">Student Portal</div>
                     <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
                 </div>
@@ -646,7 +781,6 @@
                             <small>{{ user.student_profile.registration_number }}</small>
                         </div>
                     </a>
-                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu" aria-label="Open student navigation"><i class="bi bi-list"></i></button>
                 </div>
             </header>
 
@@ -742,7 +876,7 @@
         </div>
     </div>
 
-    <nav class="navbar fixed-bottom navbar-light bg-white border-top d-lg-none shadow-lg" style="padding:0.5rem 0.75rem;">
+    <nav class="navbar fixed-bottom navbar-light bg-white border-top d-lg-none shadow-lg mobile-student-bottom-nav" style="padding:0.5rem 0.75rem;">
         <div class="container-fluid px-0">
             <div class="d-flex justify-content-around w-100">
                 <a href="{% url 'student_dashboard' %}" class="btn btn-link text-dark p-2"><i class="bi bi-house d-block fs-5"></i><small>Home</small></a>
