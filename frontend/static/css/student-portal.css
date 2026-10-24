@@ -33,7 +33,10 @@
     text-align: center;
 }
 
-.student-mobile-menu {
+.offcanvas.student-mobile-menu {
+    --bs-offcanvas-width: min(320px, 68vw);
+    width: min(320px, 68vw) !important;
+    max-width: 68vw;
     background: var(--pale-blue);
 }
 

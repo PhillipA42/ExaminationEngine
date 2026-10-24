@@ -21,6 +21,7 @@
             --ksu-secondary: #4f94e8;
             --ksu-pale: #eaf4ff;
             --ksu-soft: #dceeff;
+            --ksu-warm-neutral: #fffaf1;
             --ksu-background: #f7fafd;
             --ksu-border: #c9e0f7;
             --ksu-white: #ffffff;
@@ -81,6 +82,10 @@
             display: flex;
             min-height: 100vh;
             background: var(--bg-canvas);
+        }
+
+        .student-app-shell {
+            background: var(--ksu-warm-neutral);
         }
 
         .app-sidebar {
@@ -596,16 +601,16 @@
                 display: flex;
                 position: fixed;
                 z-index: 6;
-                top: 88px;
+                top: 0;
                 bottom: 0;
                 left: 0;
                 width: 72px;
                 height: auto;
                 overflow-y: auto;
                 padding: 12px 8px;
-                background: #3f70b7;
-                border: 0;
-                color: #fff;
+                background: var(--ksu-pale);
+                border-right: 1px solid var(--ksu-border);
+                color: var(--ksu-primary-dark);
             }
             .student-app-shell .brand-lockup {
                 display: none;
@@ -615,7 +620,7 @@
                 gap: 6px;
             }
             .student-app-shell .sidebar-footer {
-                border-color: rgba(255, 255, 255, 0.25);
+                border-color: var(--ksu-border);
             }
             .student-app-shell .app-sidebar .nav-link-item {
                 width: 54px;
@@ -624,7 +629,7 @@
                 padding: 10px 0;
                 overflow: hidden;
                 border-radius: 8px;
-                color: #fff;
+                color: var(--ksu-primary-dark);
                 font-size: 0;
                 line-height: 0;
             }
@@ -634,16 +639,18 @@
                 line-height: 1;
             }
             .student-app-shell .app-sidebar .nav-link-item:hover {
-                background: rgba(255, 255, 255, 0.16);
-                color: #fff;
+                background: var(--ksu-soft);
+                color: var(--ksu-primary-dark);
             }
             .student-app-shell .app-sidebar .nav-link-item.active {
-                background: #84301e;
-                border-color: rgba(255, 255, 255, 0.18);
-                color: #fff;
+                background: #d5eaff;
+                border-color: var(--ksu-border);
+                color: var(--ksu-primary-dark);
             }
             .student-app-shell .app-main {
-                width: 100%;
+                width: calc(100% - 72px);
+                min-width: 0;
+                margin-left: 72px;
             }
             .student-app-shell .topbar {
                 display: grid;
@@ -653,8 +660,8 @@
                 height: auto;
                 min-height: 88px;
                 padding: 8px 16px;
-                background: #fff;
-                border-color: #e2e8f0;
+                background: var(--ksu-header);
+                border-color: var(--ksu-secondary);
                 color: var(--ksu-primary-dark);
             }
             .student-mobile-brand {
@@ -668,7 +675,7 @@
                 display: inline-flex;
                 align-items: center;
                 gap: 8px;
-                color: var(--ksu-primary-dark);
+                color: #fff;
                 font-weight: 800;
                 letter-spacing: -0.03em;
             }
@@ -684,6 +691,10 @@
             .student-app-shell .topbar .icon-button {
                 color: var(--ksu-primary-dark);
             }
+            .student-app-shell .topbar .page-title,
+            .student-app-shell .topbar .page-kicker {
+                color: #fff;
+            }
             .student-app-shell .topbar-actions {
                 grid-area: actions;
                 gap: 8px;
@@ -693,9 +704,12 @@
                 border-color: #e2e8f0;
             }
             .student-app-shell .topbar .profile-pill {
+                width: 44px;
+                height: 44px;
+                justify-content: center;
                 padding: 4px;
-                border: 0;
-                background: transparent;
+                border: 1px solid #d9e4f2;
+                background: #fff;
             }
             .student-app-shell .topbar .profile-avatar {
                 width: 36px;
@@ -703,8 +717,18 @@
                 border: 1px solid #e2e8f0;
                 border-radius: 50%;
             }
+            .student-app-shell .topbar .profile-meta {
+                display: none !important;
+            }
+            .student-app-shell .topbar .profile-meta strong {
+                color: #123f78 !important;
+                font-weight: 700;
+            }
+            .student-app-shell .topbar .profile-meta small {
+                color: #334155 !important;
+                font-weight: 600;
+            }
             .student-app-shell .page-content {
-                margin-left: 72px;
                 padding: 18px 16px 36px;
             }
             .student-app-shell .mobile-student-bottom-nav {
@@ -715,7 +739,7 @@
         @media (max-width: 575.98px) {
             .page-kicker { display: none; }
             .info-grid, .quick-grid, .data-grid { grid-template-columns: 1fr; }
-            .student-app-shell .topbar-actions .profile-meta { display: none; }
+            .student-app-shell .topbar .profile-pill { gap: 7px; }
             .page-title { font-size: 1.15rem; }
             .next-exam-panel { padding: 20px 16px; }
             .student-app-shell .page-content { padding: 14px 12px 28px; }
@@ -723,6 +747,10 @@
             .student-app-shell .hero-card h2 { font-size: 1.55rem; }
             .student-app-shell .exam-item { align-items: flex-start; flex-direction: column; }
             .student-app-shell .exam-meta { text-align: left; }
+        }
+
+        @media (max-width: 359.98px) {
+            .student-app-shell .topbar .profile-meta { display: none !important; }
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -876,7 +904,7 @@
         </div>
     </div>
 
-    <nav class="navbar fixed-bottom navbar-light bg-white border-top d-lg-none shadow-lg mobile-student-bottom-nav" style="padding:0.5rem 0.75rem;">
+    <nav class="navbar fixed-bottom navbar-light bg-white border-top d-none shadow-lg mobile-student-bottom-nav" style="padding:0.5rem 0.75rem;">
         <div class="container-fluid px-0">
             <div class="d-flex justify-content-around w-100">
                 <a href="{% url 'student_dashboard' %}" class="btn btn-link text-dark p-2"><i class="bi bi-house d-block fs-5"></i><small>Home</small></a>
@@ -887,7 +915,7 @@
             </div>
         </div>
     </nav>
-    <div class="offcanvas offcanvas-start student-mobile-menu d-lg-none" tabindex="-1" id="studentMobileMenu" aria-labelledby="studentMobileMenuLabel">
+    <div class="offcanvas offcanvas-start student-mobile-menu d-lg-none" style="--bs-offcanvas-width: 68vw; width: 68vw; max-width: 68vw;" tabindex="-1" id="studentMobileMenu" aria-labelledby="studentMobileMenuLabel">
         <div class="offcanvas-header">
             <h2 class="offcanvas-title h5" id="studentMobileMenuLabel">Student Portal</h2>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close navigation"></button>
