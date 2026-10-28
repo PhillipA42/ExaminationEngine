@@ -4,6 +4,7 @@ from functools import wraps
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.views.decorators.http import require_POST
@@ -29,7 +30,7 @@ def lecturer_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if not hasattr(request.user, 'lecturer_profile') and not request.user.is_superuser:
             return HttpResponseForbidden("Access restricted: Lecturer profile required.")
         return view_func(request, *args, **kwargs)
@@ -40,7 +41,7 @@ def cod_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if not request.user.is_cod:
             return HttpResponseForbidden("Access restricted: Chairman of Department (COD) authorization required.")
         return view_func(request, *args, **kwargs)
@@ -51,7 +52,7 @@ def dean_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if not request.user.is_dean:
             return HttpResponseForbidden("Access restricted: Dean of School authorization required.")
         return view_func(request, *args, **kwargs)
@@ -62,7 +63,7 @@ def exam_officer_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if not request.user.is_exam_officer:
             return HttpResponseForbidden("Access restricted: Examination Officer authorization required.")
         return view_func(request, *args, **kwargs)

@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Examination Control Centre{% endblock %}
+{% block page_title %}Examination Control Centre{% endblock %}
+{% block lecturer_page_title %}Examination Control Centre{% endblock %}
+{% block officer_page_heading %}Control Centre{% endblock %}
+
+{% block content %}
+<div class="officer-dashboard">
+    <div class="officer-page-heading">
+        <div>
+            <span class="officer-eyebrow">Operations overview</span>
+            <h1>Examination Control Centre</h1>
+            <p>Operational overview of examination activities across the university.</p>
+        </div>
+        {% if period %}
+        <span class="officer-status status-{{ period.status|lower }}">{{ period.status|title }}</span>
+        {% endif %}
+    </div>
+
+    <section class="officer-period-card" aria-labelledby="selected-period-title">
+        <div>
+            <span class="officer-eyebrow">Current examination period</span>
+            {% if period %}
+            <h2 id="selected-period-title">{{ period.name }}</h2>
+            <p>{{ period.academic_year }} · Semester {{ period.semester }} · {{ period.start_date|date:"d M Y" }} – {{ period.end_date|date:"d M Y" }}</p>
+            <div class="officer-progress" role="progressbar" aria-label="Timetable scheduling progress" aria-valuenow="{{ schedule_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <span style="width: {{ schedule_percent }}%"></span>
+            </div>
+            <small>{{ scheduled_count }} of {{ examination_count }} examinations scheduled</small>
+            {% else %}
+            <h2 id="selected-period-title">No examination period available</h2>
+            <p>Create or import a period before planning examinations.</p>
+            {% endif %}
+        </div>
+        <div class="officer-period-actions">
+            {% if period %}
+            <a class="btn btn-primary" href="{% url 'period_timetable_planner' period.id %}"><i class="bi bi-calendar-week me-1"></i>View period</a>
+            <a class="btn btn-outline-primary" href="{% url 'officer_workspace' section='examinations' %}?period={{ period.id }}">Manage examinations</a>
+            {% else %}
+            <a class="btn btn-primary" href="{% url 'officer_workspace' section='periods' %}">View examination periods</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="officer-metric-grid" aria-label="Operational summary">
+        <a class="officer-metric" href="{% url 'officer_workspace' section='examinations' %}{% if period %}?period={{ period.id }}{% endif %}">
+            <span class="metric-icon blue"><i class="bi bi-journal-text"></i></span>
+            <span class="metric-label">Examinations</span>
+            <strong>{{ examination_count }}</strong>
+            <span class="metric-note">Selected period</span>
+        </a>
+        <a class="officer-metric" href="{% url 'officer_workspace' section='timetable' %}">
+            <span class="metric-icon green"><i class="bi bi-calendar-check"></i></span>
+            <span class="metric-label">Scheduled</span>
+            <strong>{{ scheduled_count }}</strong>
+            <span class="metric-note">{{ unscheduled_count }} awaiting scheduling</span>
+        </a>
+        <a class="officer-metric" href="{% url 'officer_sessions' %}">
+            <span class="metric-icon blue"><i class="bi bi-broadcast"></i></span>
+            <span class="metric-label">Active sessions</span>
+            <strong>{{ active_session_count }}</strong>
+            <span class="metric-note">Sessions opened by invigilators</span>
+        </a>
+        <a class="officer-metric" href="{% url 'officer_workspace' section='invigilators' %}">
+            <span class="metric-icon amber"><i class="bi bi-person-badge"></i></span>
+            <span class="metric-label">Unassigned examinations</span>
+            <strong>{{ unassigned_count }}</strong>
+            <span class="metric-note">No invigilator duties recorded</span>
+        </a>
+    </section>
+
+    <div class="officer-dashboard-grid">
+        <section class="officer-panel">
+            <div class="officer-panel-heading">
+                <div>
+                    <span class="officer-eyebrow">Operational priorities</span>
+                    <h2>Requires attention</h2>
+                </div>
+                <span class="officer-count">{{ attention_items|length }}</span>
+            </div>
+            <div class="officer-attention-list">
+                {% for item in attention_items %}
+                <a class="officer-attention-item" href="{{ item.url }}">
+                    <span class="attention-mark {{ item.severity }}"></span>
+                    <span class="attention-copy">
+                        <strong>{{ item.title }}</strong>
+                        <small>Open the related records to investigate</small>
+                    </span>
+                    <span class="attention-count">{{ item.count }}</span>
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                {% empty %}
+                <div class="officer-empty-state">
+                    <i class="bi bi-check-circle"></i>
+                    <strong>No outstanding dashboard issues</strong>
+                    <span>Counts reflect records currently available to the system.</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="officer-panel">
+            <div class="officer-panel-heading">
+                <div>
+                    <span class="officer-eyebrow">Examination-day operations</span>
+                    <h2>Active sessions</h2>
+                </div>
+                <a href="{% url 'officer_sessions' %}" class="officer-heading-link">View all</a>
+            </div>
+            <div class="officer-compact-list">
+                {% for session in active_sessions %}
+                <a class="officer-compact-item" href="{% url 'officer_session_detail' session.id %}">
+                    <span class="compact-icon"><i class="bi bi-door-open"></i></span>
+                    <span>
+                        <strong>{{ session.examination.unit.code }} · {{ session.room.name }}</strong>
+                        <small>{{ session.room.building.name }} · Opened {{ session.opened_at|date:"d M, H:i" }}</small>
+                    </span>
+                    <span class="officer-status status-open">Open</span>
+                </a>
+                {% empty %}
+                <div class="officer-empty-state compact-empty">
+                    <i class="bi bi-clock-history"></i>
+                    <strong>No sessions are currently open</strong>
+                    <span>Session state is recorded by assigned invigilators.</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="officer-panel officer-panel-wide">
+            <div class="officer-panel-heading">
+                <div>
+                    <span class="officer-eyebrow">Next on the timetable</span>
+                    <h2>Upcoming examinations</h2>
+                </div>
+                <a href="{% url 'officer_workspace' section='examinations' %}" class="officer-heading-link">All examinations</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table officer-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Examination</th>
+                            <th>Date and time</th>
+                            <th>Venue</th>
+                            <th>Students</th>
+                            <th>Invigilators</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in upcoming_items %}
+                        <tr>
+                            <td><strong>{{ item.examination.unit.code }}</strong><small>{{ item.examination.unit.name }}</small></td>
+                            <td>{{ item.schedule.exam_date|date:"d M Y" }}<small>{{ item.schedule.start_time|time:"H:i" }} – {{ item.schedule.end_time|time:"H:i" }}</small></td>
+                            <td>{{ item.venue }}</td>
+                            <td>{{ item.allocated_students }}</td>
+                            <td>
+                                {% if item.has_invigilators %}
+                                <span class="officer-status status-complete">Assigned</span>
+                                {% else %}
+                                <span class="officer-status status-pending">Not assigned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">No upcoming scheduled examinations for this period.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="officer-panel">
+            <div class="officer-panel-heading">
+                <div>
+                    <span class="officer-eyebrow">Audit records</span>
+                    <h2>Recent operational activity</h2>
+                </div>
+            </div>
+            <div class="officer-activity-list">
+                {% for event in recent_activity %}
+                <div class="officer-activity-item">
+                    <span class="activity-dot"></span>
+                    <span>
+                        <strong>{{ event.label }}</strong>
+                        <small>{{ event.description }}</small>
+                        <time>{{ event.at|date:"d M Y, H:i" }}</time>
+                    </span>
+                </div>
+                {% empty %}
+                <div class="officer-empty-state compact-empty">
+                    <i class="bi bi-clock"></i>
+                    <strong>No audit activity recorded yet</strong>
+                    <span>Activity appears here when supported system workflows are used.</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

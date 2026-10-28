@@ -6,7 +6,7 @@
     --pale-blue: #EAF4FF;
     --soft-blue: #DCEEFF;
     --very-light-blue: #F4F9FF;
-    --page-background: #F7FAFD;
+    --page-background: #FFFFFF;
     --card-background: #FFFFFF;
     --border-blue: #C9E0F7;
     --primary-text: #1F2937;
@@ -39,6 +39,17 @@
     max-width: 68vw;
     background: var(--pale-blue);
 }
+
+.offcanvas.mobile-lecturer-menu {
+    --bs-offcanvas-width: min(320px, 82vw);
+    width: min(320px, 82vw) !important;
+    max-width: 82vw;
+    background: var(--pale-blue);
+}
+
+.mobile-lecturer-menu .offcanvas-header { border-bottom: 1px solid var(--border-blue); }
+.mobile-lecturer-menu .sidebar-nav { gap: 5px; }
+.mobile-lecturer-menu .nav-link-item { min-height: 44px; }
 
 .student-mobile-menu .offcanvas-header {
     border-bottom: 1px solid var(--border-blue);

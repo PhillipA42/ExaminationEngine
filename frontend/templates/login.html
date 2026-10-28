@@ -10,7 +10,7 @@
                 <i class="bi bi-box-arrow-in-right fs-1"></i>
             </div>
             <h3 class="fw-bold text-dark mb-1">Edunex</h3>
-            <p class="text-muted small">Use your student or lecturer credentials to access the correct dashboard.</p>
+            <p class="text-muted small">Use your student, lecturer, or examination officer credentials to access the correct dashboard.</p>
         </div>
 
         <div class="card card-custom p-4 bg-white mb-4">
@@ -22,7 +22,7 @@
                     <label for="username" class="form-label fw-semibold small text-muted">Username</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-person"></i></span>
-                        <input type="text" class="form-control border-start-0" id="username" name="username" placeholder="e.g. std001 or lec001" required autofocus autocomplete="username">
+                        <input type="text" class="form-control border-start-0" id="username" name="username" placeholder="e.g. std001, lec001, or officer001" required autofocus autocomplete="username">
                     </div>
                 </div>
 
@@ -31,6 +31,7 @@
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-lock"></i></span>
                         <input type="password" class="form-control border-start-0" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword" aria-label="Show password" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button>
                     </div>
                 </div>
 
@@ -53,8 +54,8 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('lec001', 'Password123!')">
                     <i class="bi bi-person-badge-fill"></i> <strong>lec001</strong> — Lecturer
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('officer01', 'Password123!')">
-                    <i class="bi bi-shield-check"></i> <strong>officer01</strong> — Exam Officer
+                <button type="button" class="btn btn-sm btn-outline-secondary text-start font-monospace py-1" onclick="fillCreds('officer001', 'Password123!')">
+                    <i class="bi bi-shield-check"></i> <strong>officer001</strong> — Exam Officer
                 </button>
             </div>
             <div class="text-muted text-center mt-2" style="font-size: 0.75rem;">
@@ -71,5 +72,14 @@
         document.getElementById('username').value = u;
         document.getElementById('password').value = p;
     }
+
+    document.getElementById('togglePassword').addEventListener('click', function () {
+        const passwordInput = document.getElementById('password');
+        const isHidden = passwordInput.type === 'password';
+        passwordInput.type = isHidden ? 'text' : 'password';
+        this.setAttribute('aria-pressed', String(isHidden));
+        this.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+        this.innerHTML = `<i class="bi ${isHidden ? 'bi-eye-slash' : 'bi-eye'}" aria-hidden="true"></i>`;
+    });
 </script>
 {% endblock %}

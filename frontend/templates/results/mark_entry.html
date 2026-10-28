@@ -394,6 +394,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getCsrfToken() {
+        const tokenInput = document.querySelector('#csrf-token-source [name="csrfmiddlewaretoken"]');
+        if (tokenInput) {
+            return tokenInput.value;
+        }
         const cookie = document.cookie.split('; ').find(row => row.startsWith('csrftoken='));
         return cookie ? cookie.split('=')[1] : '';
     }

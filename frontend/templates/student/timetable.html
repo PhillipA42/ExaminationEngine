@@ -5,49 +5,6 @@
 {% block content %}
 <div class="row g-4">
 
-    <!-- Student Profile & Exam Period Header -->
-    <div class="col-12">
-        <div class="card card-custom bg-white p-4">
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
-                
-                <div class="d-flex align-items-center gap-3">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 60px; height: 60px; font-size: 1.5rem;">
-                        {{ student.user.first_name|first|default:student.user.username|first|upper }}
-                    </div>
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <h4 class="fw-bold mb-0 text-dark">
-                                {{ student.user.get_full_name|default:student.user.username }}
-                            </h4>
-                            <span class="badge bg-primary text-white font-monospace px-2.5 py-1">
-                                {{ student.registration_number }}
-                            </span>
-                        </div>
-                        <div class="d-flex flex-wrap align-items-center gap-2 text-muted small">
-                            <span><i class="bi bi-mortarboard me-1"></i>{{ student.course.name }} (Yr {{ student.year_of_study }})</span>
-                            <span>&bull;</span>
-                            <span><i class="bi bi-building me-1"></i>{{ student.department.name }}</span>
-                            <span>&bull;</span>
-                            <span>{{ student.school.name }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Button to Examination Pass -->
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{% url 'student_exam_pass' %}" class="btn btn-primary-custom d-flex align-items-center gap-2 px-3 py-2 shadow-sm">
-                        <i class="bi bi-card-heading fs-5"></i>
-                        <div class="text-start">
-                            <div class="fw-bold" style="font-size: 0.85rem; line-height: 1.1;">Examination Pass</div>
-                            <div class="small opacity-75" style="font-size: 0.7rem;">Print / Download PDF</div>
-                        </div>
-                    </a>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
     <!-- Active Examination Period & Stats Bar -->
     <div class="col-12">
         <div class="row g-3">

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Examination Pass - {{ student.registration_number }}{% endblock %}
+{% block title %}Exam Card - {{ student.registration_number }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -102,14 +102,14 @@
         </div>
     </div>
 
-    <form method="get" class="exam-filter-form card-custom p-3 mb-4 btn-print-controls" aria-label="Select examination period for pass">
+    <form method="get" class="exam-filter-form card-custom p-3 mb-4 btn-print-controls" aria-label="Select examination period for Exam Card">
         <div class="filter-field"><label for="pass-period" class="form-label">Examination period</label><select class="form-select" id="pass-period" name="period">{% for period in period_options %}<option value="{{ period.id }}" {% if selected_period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% empty %}<option value="">No published periods</option>{% endfor %}</select></div>
-        <button type="submit" class="primary-btn">View pass</button>
+        <button type="submit" class="primary-btn">View Exam Card</button>
         {% if allocations %}<a class="secondary-btn" href="{% url 'student_venue_navigation' allocation_id=allocations.0.id %}">Navigate to first venue</a>{% endif %}
     </form>
 
     {% if allocations %}
-    <!-- Printable examination pass generated from this student's current published allocations -->
+    <!-- Exam Card view for this student's current published examination allocations -->
     <div class="exam-pass-paper" id="printablePass">
         
         <!-- Document Header -->
@@ -122,14 +122,14 @@
 
             <div class="col-6 text-center">
                 <h4 class="fw-bold text-uppercase mb-0 letter-spacing-1 text-dark">Edunex</h4>
-                <div class="fw-bold text-secondary small text-uppercase">Student examination pass</div>
-                <h5 class="fw-extrabold text-uppercase text-primary mt-2 mb-0" style="letter-spacing: 0.05em;">Examination Allocation Pass</h5>
+                <div class="fw-bold text-secondary small text-uppercase">Student Exam Card</div>
+                <h5 class="fw-extrabold text-uppercase text-primary mt-2 mb-0" style="letter-spacing: 0.05em;">Examination Card</h5>
                 <div class="small text-muted font-monospace">{{ active_period.name|default:"No published examination period" }}</div>
             </div>
 
             <div class="col-3 text-end">
                 <div class="security-badge text-center small font-monospace">
-                    <div style="font-size: 0.65rem;" class="text-uppercase text-muted">PASS STATUS</div>
+                    <div style="font-size: 0.65rem;" class="text-uppercase text-muted">CARD STATUS</div>
                     <strong class="text-dark">CURRENT ALLOCATIONS</strong>
                     <div class="text-muted" style="font-size: 0.65rem;">Issued: {{ generation_date|date:"d-M-Y" }}</div>
                 </div>
@@ -265,8 +265,8 @@
     {% else %}
     <div class="empty-state" role="status">
         <i class="bi bi-card-heading fs-2" aria-hidden="true"></i>
-        <h2 class="h5 mt-3">No examination pass is available</h2>
-        <p class="mb-0">A pass will be available when you have an examination allocation in a published examination period.</p>
+        <h2 class="h5 mt-3">No Exam Card is available</h2>
+        <p class="mb-0">An Exam Card will be available when your official examination details are published.</p>
     </div>
     {% endif %}
 

@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Monitoring · Examination Control Centre{% endblock %}
+{% block page_title %}Session Monitoring{% endblock %}
+{% block lecturer_page_title %}Session Monitoring{% endblock %}
+{% block officer_page_heading %}Session Monitoring{% endblock %}
+
+{% block content %}
+<div class="officer-workspace">
+    <div class="officer-page-heading">
+        <div>
+            <span class="officer-eyebrow">Read-only session monitoring</span>
+            <h1>{{ session.examination.unit.code }} · {{ session.room.name }}</h1>
+            <p>{{ session.examination.unit.name }} · {{ session.room.building.campus.name }} · {{ session.room.building.name }}</p>
+        </div>
+        <span class="officer-status {% if session.status == 'OPEN' %}status-open{% else %}status-complete{% endif %}">{{ session.get_status_display }}</span>
+    </div>
+
+    <div class="officer-metric-grid session-metrics">
+        <div class="officer-metric"><span class="metric-icon blue"><i class="bi bi-people"></i></span><span class="metric-label">Expected students</span><strong>{{ allocations|length }}</strong></div>
+        <div class="officer-metric"><span class="metric-icon green"><i class="bi bi-person-check"></i></span><span class="metric-label">Attendance recorded</span><strong>{{ attendance|length }}</strong></div>
+        <div class="officer-metric"><span class="metric-icon amber"><i class="bi bi-person-badge"></i></span><span class="metric-label">Assigned invigilators</span><strong>{{ duties|length }}</strong></div>
+        <div class="officer-metric"><span class="metric-icon red"><i class="bi bi-shield-exclamation"></i></span><span class="metric-label">Reported cases</span><strong>{{ cases|length }}</strong></div>
+    </div>
+
+    <div class="officer-dashboard-grid">
+        <section class="officer-panel">
+            <div class="officer-panel-heading"><h2>Assigned invigilators</h2></div>
+            <div class="officer-compact-list">
+                {% for duty in duties %}
+                <div class="officer-compact-item"><span class="compact-icon"><i class="bi bi-person-badge"></i></span><span><strong>{{ duty.lecturer.user.get_full_name }}</strong><small>{{ duty.role|title }} · {{ duty.status|title }}</small></span></div>
+                {% empty %}<div class="officer-empty-state compact-empty"><strong>No duty records</strong></div>{% endfor %}
+            </div>
+        </section>
+        <section class="officer-panel">
+            <div class="officer-panel-heading"><h2>Reported cases</h2></div>
+            <div class="officer-compact-list">
+                {% for case in cases %}
+                <div class="officer-compact-item"><span class="compact-icon issue"><i class="bi bi-shield-exclamation"></i></span><span><strong>{{ case.case_number }} · {{ case.student.registration_number }}</strong><small>{{ case.incident_type }} · {{ case.get_status_display }}</small></span></div>
+                {% empty %}<div class="officer-empty-state compact-empty"><strong>No malpractice reports for this room</strong></div>{% endfor %}
+            </div>
+        </section>
+        <section class="officer-panel officer-panel-wide">
+            <div class="officer-panel-heading"><h2>Attendance and booklet records</h2></div>
+            <div class="table-responsive">
+                <table class="table officer-table align-middle mb-0">
+                    <thead><tr><th>Student number</th><th>Student</th><th>Attendance</th><th>Booklet serial</th><th>Recorded by</th><th>Time</th></tr></thead>
+                    <tbody>
+                        {% for record in attendance %}
+                        <tr><td>{{ record.student.registration_number }}</td><td>{{ record.student.user.get_full_name }}</td><td>{% if record.is_present %}Present{% else %}Absent{% endif %}</td><td>{{ record.booklet_serial_number|default:"Missing" }}</td><td>{{ record.recorded_by.user.get_full_name|default:"—" }}</td><td>{{ record.check_in_time|date:"d M Y, H:i" }}</td></tr>
+                        {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No attendance records have been recorded.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

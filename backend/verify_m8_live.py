@@ -10,7 +10,7 @@ def create_session_for_user(username, password):
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
     
     # Try invigilator/staff login
-    login_page = opener.open('http://127.0.0.1:8000/invigilator/login/').read().decode('utf-8')
+    login_page = opener.open('http://127.0.0.1:8000/login/').read().decode('utf-8')
     csrf_token = ""
     for cookie in cj:
         if cookie.name == 'csrftoken':
@@ -23,9 +23,9 @@ def create_session_for_user(username, password):
     }).encode('utf-8')
 
     login_req = urllib.request.Request(
-        'http://127.0.0.1:8000/invigilator/login/',
+        'http://127.0.0.1:8000/login/',
         data=login_data,
-        headers={'Referer': 'http://127.0.0.1:8000/invigilator/login/'}
+        headers={'Referer': 'http://127.0.0.1:8000/login/'}
     )
     opener.open(login_req)
 
@@ -86,7 +86,7 @@ print(f"[6] Exam Officer Results Dashboard Loaded (HTTP 200) -> Verified: {has_o
 cj_std = http.cookiejar.CookieJar()
 opener_std = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj_std))
 
-opener_std.open('http://127.0.0.1:8000/student/login/')
+opener_std.open('http://127.0.0.1:8000/login/')
 csrf_std = ""
 for cookie in cj_std:
     if cookie.name == 'csrftoken':
@@ -99,9 +99,9 @@ login_data_std = urllib.parse.urlencode({
 }).encode('utf-8')
 
 opener_std.open(urllib.request.Request(
-    'http://127.0.0.1:8000/student/login/',
+    'http://127.0.0.1:8000/login/',
     data=login_data_std,
-    headers={'Referer': 'http://127.0.0.1:8000/student/login/'}
+    headers={'Referer': 'http://127.0.0.1:8000/login/'}
 ))
 
 std_results = opener_std.open('http://127.0.0.1:8000/student/results/').read().decode('utf-8')

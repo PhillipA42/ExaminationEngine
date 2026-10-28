@@ -12,12 +12,14 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="{% static 'css/student-portal.css' %}">
+    <link rel="stylesheet" href="{% static 'css/officer-portal.css' %}">
 
     <style>
         :root {
             --ksu-primary: #2f80ed;
             --ksu-primary-dark: #1456a0;
-            --ksu-header: #66a9f2;
+            --ksu-header: #79b3f5;
+            --ksu-navigation: #a9cffa;
             --ksu-secondary: #4f94e8;
             --ksu-pale: #eaf4ff;
             --ksu-soft: #dceeff;
@@ -90,24 +92,21 @@
 
         .app-sidebar {
             width: 260px;
-            background: var(--ksu-pale);
-            color: var(--ksu-primary-dark);
+            background: var(--ksu-navigation);
+            color: #fff;
             padding: 24px 16px 18px;
-            border-right: 1px solid var(--ksu-border);
+            border-right: 1px solid var(--ksu-secondary);
             display: flex;
             flex-direction: column;
-            position: sticky;
-            top: 0;
-            height: 100vh;
+            position: fixed;
+            z-index: 4;
+            top: 84px;
+            left: 0;
+            height: calc(100vh - 84px);
         }
 
         .brand-lockup {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 4px 10px 20px;
-            border-bottom: 1px solid var(--ksu-border);
-            margin-bottom: 18px;
+            display: none;
         }
 
         .brand-mark {
@@ -117,7 +116,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--ksu-soft);
+            background: rgba(255,255,255,0.9);
             color: var(--ksu-primary);
             font-size: 1.2rem;
         }
@@ -125,11 +124,11 @@
         .brand-text {
             font-weight: 700;
             letter-spacing: -0.04em;
-            color: var(--ksu-primary-dark);
+            color: #fff;
             font-size: 1.05rem;
         }
 
-        .brand-text span { color: var(--ksu-primary); }
+        .brand-text span { color: #fff; }
 
         .sidebar-nav {
             display: flex;
@@ -143,14 +142,14 @@
             gap: 12px;
             padding: 11px 12px;
             border-radius: 12px;
-            color: var(--ksu-primary-dark);
+            color: #fff;
             font-weight: 500;
             transition: 0.2s ease;
         }
 
         .nav-link-item:hover {
-            background: var(--ksu-soft);
-            color: var(--ksu-primary-dark);
+            background: rgba(20,86,160,0.28);
+            color: #fff;
         }
 
         .nav-link-item:focus-visible, .icon-button:focus-visible, .quick-action:focus-visible,
@@ -160,9 +159,9 @@
         }
 
         .nav-link-item.active {
-            background: #d5eaff;
-            color: var(--ksu-primary-dark);
-            border: 1px solid var(--ksu-border);
+            background: rgba(20,86,160,0.28);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.45);
         }
 
         .nav-link-item i {
@@ -174,7 +173,7 @@
         .sidebar-footer {
             margin-top: auto;
             padding-top: 10px;
-            border-top: 1px solid var(--ksu-border);
+            border-top: 1px solid rgba(255,255,255,0.45);
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -185,6 +184,9 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
+            width: calc(100% - 260px);
+            margin-left: 260px;
+            padding-top: 84px;
         }
 
         .topbar {
@@ -195,9 +197,12 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 30px;
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 5;
+            left: 0;
+            right: 0;
+            width: auto;
+            z-index: 1030;
         }
 
         .page-kicker {
@@ -220,12 +225,12 @@
         .topbar .page-title,
         .topbar .icon-button,
         .topbar .profile-meta strong {
-            color: #ffffff;
+            color: #fff;
         }
 
         .topbar .page-kicker,
         .topbar .profile-meta small {
-            color: var(--ksu-pale);
+            color: rgba(255,255,255,0.88);
         }
 
         .public-header {
@@ -243,6 +248,8 @@
             gap: 14px;
         }
 
+        .lecturer-mobile-brand { display: flex; align-items: center; gap: 12px; }
+
         .icon-button {
             width: 42px;
             height: 42px;
@@ -257,9 +264,41 @@
         }
 
         .topbar .icon-button {
-            background: rgba(255, 255, 255, 0.16);
-            border-color: rgba(255, 255, 255, 0.55);
+            background: rgba(255,255,255,0.16);
+            border-color: rgba(255,255,255,0.55);
+            color: #fff;
         }
+
+        .header-brand-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+            font-size: clamp(1.1rem, 2vw, 1.9rem);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            white-space: nowrap;
+        }
+
+        .header-brand-link:hover { color: #fff; }
+        .header-brand-link .brand-mark { flex: 0 0 46px; width: 46px; height: 46px; }
+        .header-university-logo {
+            display: block;
+            width: 88px;
+            height: 78px;
+            flex: 0 0 auto;
+            object-fit: contain;
+        }
+        .header-brand-content { display: flex; align-items: center; gap: 12px; }
+        .header-menu-button { border: 0; background: transparent !important; color: #fff !important; font-size: 1.55rem; }
+        .student-mobile-brand { display: flex !important; align-items: center; gap: 12px; }
+        .student-mobile-brand .header-brand-name { color: #fff; font-size: clamp(1.1rem, 2vw, 1.9rem); font-weight: 800; letter-spacing: -0.04em; white-space: nowrap; }
+        .lecturer-mobile-brand .header-brand-name { color: #fff; font-size: clamp(1.1rem, 2vw, 1.9rem); font-weight: 800; letter-spacing: -0.04em; white-space: nowrap; }
+        .student-app-shell .mobile-page-heading,
+        .lecturer-app-shell .lecturer-page-heading { display: none; }
+
+        .app-shell.sidebar-collapsed .app-sidebar { display: none; }
+        .app-shell.sidebar-collapsed .app-main { width: 100%; margin-left: 0; }
 
         .badge-dot {
             position: absolute;
@@ -276,10 +315,68 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            background: var(--panel-bg);
-            border: 1px solid var(--card-border);
+            background: rgba(255,255,255,0.16);
+            border: 1px solid rgba(255,255,255,0.55);
             border-radius: 14px;
             padding: 7px 10px 7px 7px;
+            color: #fff;
+        }
+
+        .profile-menu-toggle {
+            color: inherit;
+            cursor: pointer;
+        }
+
+        .profile-menu-toggle::after { display: none; }
+
+        .profile-menu-caret,
+        .mobile-profile-icon { display: none; }
+
+        .profile-dropdown-menu {
+            min-width: 180px;
+            padding: 8px;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .profile-dropdown-menu .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 42px;
+            border-radius: 8px;
+        }
+
+        .student-mobile-menu,
+        .mobile-lecturer-menu {
+            background: var(--ksu-navigation) !important;
+            color: #fff;
+        }
+
+        .student-mobile-menu .offcanvas-title,
+        .mobile-lecturer-menu .offcanvas-title,
+        .student-mobile-menu .nav-link-item,
+        .mobile-lecturer-menu .nav-link-item {
+            color: #fff !important;
+        }
+
+        .student-mobile-menu .offcanvas-header,
+        .mobile-lecturer-menu .offcanvas-header {
+            border-color: rgba(255,255,255,0.45) !important;
+        }
+
+        .student-mobile-menu .btn-close,
+        .mobile-lecturer-menu .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        .student-mobile-menu .nav-link-item:hover,
+        .mobile-lecturer-menu .nav-link-item:hover,
+        .student-mobile-menu .nav-link-item.active,
+        .mobile-lecturer-menu .nav-link-item.active {
+            background: rgba(20,86,160,0.28);
+            color: #fff !important;
         }
 
         .profile-avatar {
@@ -402,15 +499,19 @@
         .info-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
+            gap: 12px;
+        }
+
+        @media (min-width: 1200px) {
+            .info-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
         }
 
         .metric-card {
-            padding: 18px 18px 16px;
+            padding: 14px 14px 12px;
             border-radius: 16px;
             background: var(--panel-bg);
             border: 1px solid var(--card-border);
-            min-height: 120px;
+            min-height: 100px;
         }
 
         .metric-label {
@@ -422,8 +523,8 @@
         }
 
         .metric-value {
-            margin-top: 18px;
-            font-size: clamp(1.5rem, 2vw, 2.1rem);
+            margin-top: 12px;
+            font-size: clamp(1rem, 1.6vw, 1.8rem);
             font-weight: 800;
             line-height: 1.1;
             letter-spacing: -0.05em;
@@ -585,9 +686,14 @@
             .app-sidebar {
                 display: none;
             }
+            .app-main {
+                width: 100%;
+                margin-left: 0;
+                padding-top: 104px;
+            }
             .topbar {
                 padding: 0 18px;
-                height: 74px;
+                height: 84px;
             }
             .page-content { padding: 18px 16px 84px 16px; }
             .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -601,16 +707,16 @@
                 display: flex;
                 position: fixed;
                 z-index: 6;
-                top: 0;
+                top: 84px;
                 bottom: 0;
                 left: 0;
                 width: 72px;
-                height: auto;
+                height: calc(100vh - 84px);
                 overflow-y: auto;
                 padding: 12px 8px;
-                background: var(--ksu-pale);
+                background: var(--ksu-navigation);
                 border-right: 1px solid var(--ksu-border);
-                color: var(--ksu-primary-dark);
+                color: #fff;
             }
             .student-app-shell .brand-lockup {
                 display: none;
@@ -629,7 +735,7 @@
                 padding: 10px 0;
                 overflow: hidden;
                 border-radius: 8px;
-                color: var(--ksu-primary-dark);
+                color: #fff;
                 font-size: 0;
                 line-height: 0;
             }
@@ -637,33 +743,37 @@
                 width: auto;
                 font-size: 1.2rem;
                 line-height: 1;
+                color: #fff;
             }
             .student-app-shell .app-sidebar .nav-link-item:hover {
-                background: var(--ksu-soft);
-                color: var(--ksu-primary-dark);
+                background: rgba(20,86,160,0.28);
+                color: #fff;
             }
             .student-app-shell .app-sidebar .nav-link-item.active {
-                background: #d5eaff;
-                border-color: var(--ksu-border);
-                color: var(--ksu-primary-dark);
+                background: rgba(20,86,160,0.28);
+                border-color: rgba(255,255,255,0.45);
+                color: #fff;
             }
             .student-app-shell .app-main {
                 width: calc(100% - 72px);
                 min-width: 0;
                 margin-left: 72px;
+                padding-top: 84px;
             }
             .student-app-shell .topbar {
                 display: grid;
                 grid-template-columns: minmax(0, 1fr) auto;
-                grid-template-areas: "brand actions" "title title";
+                grid-template-areas: "brand actions";
                 gap: 0 12px;
                 height: auto;
-                min-height: 88px;
+                min-height: 84px;
                 padding: 8px 16px;
                 background: var(--ksu-header);
                 border-color: var(--ksu-secondary);
-                color: var(--ksu-primary-dark);
+                color: #fff;
             }
+            .student-app-shell .mobile-page-heading,
+            .lecturer-app-shell .lecturer-page-heading { display: none; }
             .student-mobile-brand {
                 grid-area: brand;
                 display: flex !important;
@@ -684,12 +794,16 @@
                 height: 38px;
                 flex: 0 0 38px;
             }
+            .header-university-logo {
+                width: 76px;
+                height: 72px;
+            }
             .student-app-shell .mobile-page-heading {
                 grid-area: title;
             }
             .student-app-shell .topbar .page-title,
             .student-app-shell .topbar .icon-button {
-                color: var(--ksu-primary-dark);
+                color: #fff;
             }
             .student-app-shell .topbar .page-title,
             .student-app-shell .topbar .page-kicker {
@@ -700,18 +814,24 @@
                 gap: 8px;
             }
             .student-app-shell .topbar .icon-button {
-                background: #fff;
-                border-color: #e2e8f0;
+                background: rgba(255,255,255,0.16);
+                border-color: rgba(255,255,255,0.55);
             }
             .student-app-shell .topbar .profile-pill {
                 width: 44px;
                 height: 44px;
                 justify-content: center;
                 padding: 4px;
-                border: 1px solid #d9e4f2;
-                background: #fff;
+                border: 1px solid rgba(255,255,255,0.55);
+                background: rgba(255,255,255,0.16);
             }
+            .student-app-shell .topbar .profile-menu-caret,
+            .student-app-shell .topbar .mobile-profile-icon { display: inline; }
+            .student-app-shell .topbar .mobile-profile-icon { font-size: 1.25rem; }
+            .student-app-shell .topbar .profile-pill { gap: 0; }
+            .student-app-shell .topbar-actions > .dropdown { padding-left: 10px; border-left: 1px solid rgba(255,255,255,0.55); }
             .student-app-shell .topbar .profile-avatar {
+                display: none;
                 width: 36px;
                 height: 36px;
                 border: 1px solid #e2e8f0;
@@ -734,11 +854,66 @@
             .student-app-shell .mobile-student-bottom-nav {
                 display: none !important;
             }
+
+            .lecturer-app-shell .topbar {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                grid-template-areas: "brand actions";
+                gap: 0 12px;
+                height: auto;
+                min-height: 84px;
+                padding: 8px 16px;
+            }
+            .lecturer-app-shell .app-main { padding-top: 104px; }
+            .lecturer-mobile-brand {
+                grid-area: brand;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .lecturer-mobile-brand .brand-mark {
+                width: 38px;
+                height: 38px;
+            }
+            .lecturer-mobile-brand .header-university-logo {
+                width: 76px;
+                height: 72px;
+            }
+            .lecturer-app-shell .lecturer-page-heading {
+                grid-area: title;
+            }
+            .lecturer-app-shell .topbar-actions {
+                grid-area: actions;
+                gap: 8px;
+            }
+            .lecturer-app-shell .topbar .profile-pill {
+                width: 44px;
+                height: 44px;
+                justify-content: center;
+                padding: 4px;
+                border: 1px solid rgba(255,255,255,0.55);
+                background: rgba(255,255,255,0.16);
+                gap: 0;
+            }
+            .lecturer-app-shell .topbar .profile-avatar { display: none; }
+            .lecturer-app-shell .topbar .profile-menu-caret,
+            .lecturer-app-shell .topbar .mobile-profile-icon { display: inline; }
+            .lecturer-app-shell .topbar .mobile-profile-icon { font-size: 1.25rem; color: var(--ksu-primary-dark); }
+            .lecturer-app-shell .topbar-actions > .dropdown { padding-left: 10px; border-left: 1px solid rgba(255,255,255,0.55); }
+        }
+
+        @media (min-width: 992px) {
+            .student-app-shell .topbar .mobile-profile-icon,
+            .student-app-shell .topbar .profile-menu-caret,
+            .lecturer-app-shell .topbar .mobile-profile-icon,
+            .lecturer-app-shell .topbar .profile-menu-caret { display: none; }
         }
 
         @media (max-width: 575.98px) {
             .page-kicker { display: none; }
             .info-grid, .quick-grid, .data-grid { grid-template-columns: 1fr; }
+            .student-mobile-brand .header-brand-name,
+            .lecturer-mobile-brand .header-brand-name { display: none; }
             .student-app-shell .topbar .profile-pill { gap: 7px; }
             .page-title { font-size: 1.15rem; }
             .next-exam-panel { padding: 20px 16px; }
@@ -756,7 +931,97 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    {% if user.is_authenticated and user.student_profile %}
+    {% if user.is_authenticated and user.is_exam_officer %}
+    <div class="app-shell officer-app-shell">
+        <aside class="app-sidebar officer-sidebar">
+            <a class="officer-sidebar-brand" href="{% url 'officer_dashboard' %}">
+                <span class="officer-brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
+                <span><strong>ExaminationEngine</strong><small>Kisii University</small></span>
+            </a>
+            <div class="officer-sidebar-caption">Operations menu</div>
+            <nav class="sidebar-nav" aria-label="Examination officer navigation">
+                <div class="officer-nav-group">
+                    <span class="officer-nav-heading">Overview</span>
+                    <a href="{% url 'officer_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'officer_dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                </div>
+                <div class="officer-nav-group">
+                    <span class="officer-nav-heading">Examination planning</span>
+                    <a href="{% url 'officer_workspace' section='periods' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'periods' %}active{% endif %}"><i class="bi bi-calendar-range"></i> Examination Periods</a>
+                    <a href="{% url 'officer_workspace' section='examinations' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'examinations' %}active{% endif %}"><i class="bi bi-journal-text"></i> Examinations</a>
+                    <a href="{% url 'officer_workspace' section='timetable' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'timetable' %}active{% endif %}"><i class="bi bi-calendar-week"></i> Timetable Planner</a>
+                    <a href="{% url 'officer_workspace' section='rooms' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'rooms' %}active{% endif %}"><i class="bi bi-building"></i> Rooms &amp; Venues</a>
+                    <a href="{% url 'officer_workspace' section='allocations' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'allocations' %}active{% endif %}"><i class="bi bi-people"></i> Student Allocation</a>
+                    <a href="{% url 'officer_workspace' section='invigilators' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'invigilators' %}active{% endif %}"><i class="bi bi-person-badge"></i> Invigilator Assignment</a>
+                </div>
+                <div class="officer-nav-group">
+                    <span class="officer-nav-heading">Examination operations</span>
+                    <a href="{% url 'officer_workspace' section='eligibility' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'eligibility' %}active{% endif %}"><i class="bi bi-shield-check"></i> Eligibility</a>
+                    <a href="{% url 'officer_workspace' section='attendance' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'attendance' %}active{% endif %}"><i class="bi bi-person-check"></i> Attendance Monitoring</a>
+                    <a href="{% url 'officer_workspace' section='booklets' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'booklets' %}active{% endif %}"><i class="bi bi-journal-bookmark"></i> Booklet Tracking</a>
+                    <a href="{% url 'officer_sessions' %}" class="nav-link-item {% if request.resolver_match.url_name == 'officer_sessions' or request.resolver_match.url_name == 'officer_session_detail' %}active{% endif %}"><i class="bi bi-broadcast"></i> Active Sessions</a>
+                </div>
+                <div class="officer-nav-group">
+                    <span class="officer-nav-heading">Assurance &amp; integrity</span>
+                    <a href="{% url 'officer_results_dashboard' %}" class="nav-link-item"><i class="bi bi-journal-check"></i> Results Authority</a>
+                    <a href="{% url 'officer_workspace' section='malpractice' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'malpractice' %}active{% endif %}"><i class="bi bi-shield-exclamation"></i> Malpractice Cases</a>
+                    <a href="{% url 'officer_workspace' section='reconciliation' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'reconciliation' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Reconciliation</a>
+                    <a href="{% url 'officer_workspace' section='anomalies' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'anomalies' %}active{% endif %}"><i class="bi bi-exclamation-diamond"></i> Anomaly Detection</a>
+                    <a href="{% url 'officer_workspace' section='verification' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'verification' %}active{% endif %}"><i class="bi bi-patch-check"></i> Verification</a>
+                </div>
+                <div class="officer-nav-group">
+                    <span class="officer-nav-heading">Information &amp; systems</span>
+                    <a href="{% url 'officer_workspace' section='reports' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'reports' %}active{% endif %}"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+                    <a href="{% url 'officer_workspace' section='notifications' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'notifications' %}active{% endif %}"><i class="bi bi-bell"></i> Notifications{% if officer_unread_notifications %}<span class="officer-nav-count">{{ officer_unread_notifications }}</span>{% endif %}</a>
+                    <a href="{% url 'officer_workspace' section='integrations' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'integrations' %}active{% endif %}"><i class="bi bi-diagram-2"></i> ERP Integration</a>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{% url 'officer_workspace' section='profile' %}" class="nav-link-item {% if request.resolver_match.kwargs.section == 'profile' %}active{% endif %}"><i class="bi bi-person-circle"></i> Profile</a>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+            </div>
+        </aside>
+        <div class="app-main">
+            <header class="topbar officer-topbar">
+                <div class="officer-topbar-identity">
+                    <button class="icon-button officer-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#officerMobileMenu" aria-controls="officerMobileMenu" aria-label="Open examination navigation"><i class="bi bi-list"></i></button>
+                    <img src="{% static 'images/kisii_logo.png' %}" alt="Kisii University logo">
+                    <span><strong>ExaminationEngine</strong><small>Kisii University · Examination Control Centre</small></span>
+                </div>
+                <div class="officer-topbar-heading">
+                    <div class="page-kicker">Examination Officer Portal</div>
+                    <h1 class="page-title">{% block officer_page_heading %}Control Centre{% endblock %}</h1>
+                </div>
+                <div class="topbar-actions">
+                    <a class="icon-button officer-notification-link" href="{% url 'officer_workspace' section='notifications' %}" aria-label="Notifications{% if officer_unread_notifications %}, {{ officer_unread_notifications }} unread{% endif %}">
+                        <i class="bi bi-bell"></i>
+                        {% if officer_unread_notifications %}<span class="notification-count">{{ officer_unread_notifications }}</span>{% endif %}
+                    </a>
+                    <div class="dropdown">
+                        <button class="profile-pill profile-menu-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open account menu">
+                            <span class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</span>
+                            <span class="profile-meta"><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% for role in user.role_names %}{{ role }}{% if not forloop.last %} · {% endif %}{% empty %}Examination Officer{% endfor %}</small></span>
+                            <i class="bi bi-caret-down-fill profile-menu-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'officer_workspace' section='profile' %}"><i class="bi bi-person"></i> Profile</a>
+                            <a class="dropdown-item" href="{% url 'officer_workspace' section='notifications' %}"><i class="bi bi-bell"></i> Notifications</a>
+                            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main class="page-content">
+                <div class="container-fluid px-0">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert" data-auto-dismiss="2000">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+    {% elif user.is_authenticated and user.student_profile %}
     <div class="app-shell student-app-shell">
         <aside class="app-sidebar">
             <div class="brand-lockup">
@@ -766,10 +1031,9 @@
 
             <nav class="sidebar-nav" aria-label="Student navigation">
                 <a href="{% url 'student_dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_dashboard' %}active{% endif %}"><i class="bi bi-house-door"></i> Dashboard</a>
-                <a href="{% url 'student_examinations' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_examinations' %}active{% endif %}"><i class="bi bi-journal-check"></i> My Examinations</a>
                 <a href="{% url 'student_timetable' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_timetable' %}active{% endif %}"><i class="bi bi-calendar3"></i> Timetable</a>
                 <a href="{% url 'student_eligibility' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_eligibility' %}active{% endif %}"><i class="bi bi-shield-check"></i> Eligibility</a>
-                <a href="{% url 'student_exam_pass' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_exam_pass' %}active{% endif %}"><i class="bi bi-card-heading"></i> Examination Pass</a>
+                <a href="{% url 'student_exam_pass' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_exam_pass' %}active{% endif %}"><i class="bi bi-card-heading"></i> Exam Card</a>
                 <a href="{% url 'student_navigation' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_navigation' %}active{% endif %}"><i class="bi bi-geo-alt"></i> Navigate to Venue</a>
                 <a href="{% url 'student_results' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_results' %}active{% endif %}"><i class="bi bi-award"></i> Results</a>
                 <a href="{% url 'student_notifications' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_notifications' %}active{% endif %}"><i class="bi bi-bell"></i> Notifications</a>
@@ -780,18 +1044,18 @@
 
             <div class="sidebar-footer">
                 <a href="{% url 'student_profile' %}" class="nav-link-item {% if request.resolver_match.url_name == 'student_profile' %}active{% endif %}"><i class="bi bi-person-circle"></i> Profile</a>
-                <form method="post" action="{% url 'student_logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
             </div>
         </aside>
 
         <div class="app-main">
             <header class="topbar">
-                <div class="student-mobile-brand d-none">
-                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu" aria-label="Open student navigation"><i class="bi bi-list"></i></button>
-                    <a href="{% url 'student_dashboard' %}" aria-label="Edunex student dashboard">
-                        <span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span>
-                        <span>Edunex</span>
+                <div class="student-mobile-brand">
+                    <a href="{% url 'student_dashboard' %}" aria-label="Kisii University student dashboard">
+                        <img class="header-university-logo" src="{% static 'images/kisii_logo.png' %}" alt="Kisii University logo">
                     </a>
+                    <button class="icon-button header-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu" aria-label="Open student navigation"><i class="bi bi-list"></i></button>
+                    <span class="header-brand-name">Kisii University</span>
                 </div>
                 <div class="mobile-page-heading">
                     <div class="page-kicker">Student Portal</div>
@@ -800,15 +1064,23 @@
                 <div class="topbar-actions">
                     <a class="icon-button" aria-label="Notifications{% if student_unread_notifications %}, {{ student_unread_notifications }} unread{% endif %}" href="{% url 'student_notifications' %}">
                         <i class="bi bi-bell"></i>
-                        {% if student_unread_notifications %}<span class="notification-count">{{ student_unread_notifications }}</span>{% endif %}
+                        <span class="notification-count">{{ student_unread_notifications }}</span>
                     </a>
-                    <a class="profile-pill" href="{% url 'student_profile' %}" aria-label="Open student profile">
-                        <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
-                        <div class="profile-meta">
-                            <strong>{{ user.get_full_name|default:user.username }}</strong>
-                            <small>{{ user.student_profile.registration_number }}</small>
+                    <div class="dropdown">
+                        <button class="profile-pill profile-menu-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open account menu">
+                            <span class="mobile-profile-icon"><i class="bi bi-person"></i></span>
+                            <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
+                            <div class="profile-meta">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <small>{{ user.student_profile.registration_number }}</small>
+                            </div>
+                            <i class="bi bi-caret-down-fill profile-menu-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'student_profile' %}"><i class="bi bi-person"></i> Profile</a>
+                            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
                         </div>
-                    </a>
+                    </div>
                 </div>
             </header>
 
@@ -816,7 +1088,7 @@
                 <div class="container-fluid px-0">
                     {% if messages %}
                         {% for message in messages %}
-                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert" data-auto-dismiss="2000">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
@@ -824,7 +1096,7 @@
                     {% endif %}
                 </div>
     {% elif user.is_authenticated and user.lecturer_profile %}
-    <div class="app-shell">
+    <div class="app-shell lecturer-app-shell">
         <aside class="app-sidebar">
             <div class="brand-lockup">
                 <div class="brand-mark"><i class="bi bi-mortarboard-fill"></i></div>
@@ -842,32 +1114,44 @@
             <div class="sidebar-footer">
                 <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-bell"></i> Notifications</a>
                 <a href="{% url 'lecturer_profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> Profile</a>
-                <a href="{% url 'invigilator_logout' %}" class="nav-link-item"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
             </div>
         </aside>
         <div class="app-main">
             <header class="topbar">
-                <div>
+                <div class="lecturer-mobile-brand">
+                    <img class="header-university-logo" src="{% static 'images/kisii_logo.png' %}" alt="Kisii University logo">
+                    <button class="icon-button header-menu-button" type="button" data-bs-toggle="offcanvas" data-bs-target="#lecturerMobileMenu" aria-controls="lecturerMobileMenu" aria-label="Open lecturer navigation"><i class="bi bi-list"></i></button>
+                    <span class="header-brand-name">Kisii University</span>
+                </div>
+                <div class="lecturer-page-heading">
                     <div class="page-kicker">Lecturer Portal</div>
                     <h1 class="page-title">{% block lecturer_page_title %}Dashboard{% endblock %}</h1>
                 </div>
                 <div class="topbar-actions">
                     <button class="icon-button" aria-label="Notifications"><i class="bi bi-bell"></i><span class="badge-dot"></span></button>
-                    <a class="profile-pill" href="{% url 'lecturer_profile' %}" aria-label="Open lecturer profile">
-                        <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
-                        <div class="profile-meta">
-                            <strong>{{ user.get_full_name|default:user.username }}</strong>
-                            <small>{{ user.lecturer_profile.staff_number }} · Lecturer</small>
+                    <div class="dropdown">
+                        <button class="profile-pill profile-menu-toggle dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open account menu">
+                            <span class="mobile-profile-icon"><i class="bi bi-person"></i></span>
+                            <div class="profile-avatar">{{ user.get_full_name|default:user.username|slice:':1'|upper }}</div>
+                            <div class="profile-meta">
+                                <strong>{{ user.get_full_name|default:user.username }}</strong>
+                                <small>{{ user.lecturer_profile.staff_number }} · Lecturer</small>
+                            </div>
+                            <i class="bi bi-caret-down-fill profile-menu-caret" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end profile-dropdown-menu">
+                            <a class="dropdown-item" href="{% url 'lecturer_profile' %}"><i class="bi bi-person"></i> Profile</a>
+                            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
                         </div>
-                    </a>
-                    <button class="icon-button mobile-menu-button d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#lecturerMobileMenu" aria-controls="lecturerMobileMenu" aria-label="Open lecturer navigation"><i class="bi bi-list"></i></button>
+                    </div>
                 </div>
             </header>
             <main class="page-content">
                 <div class="container-fluid px-0">
                     {% if messages %}
                         {% for message in messages %}
-                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert" data-auto-dismiss="2000">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
@@ -878,7 +1162,7 @@
         <nav class="navbar navbar-expand-lg navbar-dark public-header sticky-top py-2">
             <div class="container-fluid px-3 px-lg-4">
                 <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-                    <i class="bi bi-mortarboard-fill text-primary fs-4"></i>
+                    <img class="header-university-logo" src="{% static 'images/kisii_logo.png' %}" alt="Kisii University logo">
                     <span>Edunex</span>
                 </a>
                 <div class="d-flex align-items-center ms-auto gap-2">
@@ -889,7 +1173,7 @@
         <main class="container-fluid px-3 px-lg-4 py-4">
             {% if messages %}
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert">
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm mb-4" role="alert" data-auto-dismiss="2000">
                     {{ message }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -899,7 +1183,42 @@
 
     {% block content %}{% endblock %}
 
-    {% if user.is_authenticated and user.student_profile %}
+    {% if user.is_authenticated and user.is_exam_officer %}
+            </main>
+        </div>
+    </div>
+    <div class="offcanvas offcanvas-start officer-mobile-menu d-lg-none" tabindex="-1" id="officerMobileMenu" aria-labelledby="officerMobileMenuLabel">
+        <div class="offcanvas-header">
+            <h2 class="offcanvas-title h5" id="officerMobileMenuLabel">Examination Operations</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close navigation"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav class="sidebar-nav" aria-label="Mobile examination officer navigation">
+                <a href="{% url 'officer_dashboard' %}" class="nav-link-item"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                <a href="{% url 'officer_workspace' section='periods' %}" class="nav-link-item"><i class="bi bi-calendar-range"></i> Examination Periods</a>
+                <a href="{% url 'officer_workspace' section='examinations' %}" class="nav-link-item"><i class="bi bi-journal-text"></i> Examinations</a>
+                <a href="{% url 'officer_workspace' section='timetable' %}" class="nav-link-item"><i class="bi bi-calendar-week"></i> Timetable Planner</a>
+                <a href="{% url 'officer_workspace' section='rooms' %}" class="nav-link-item"><i class="bi bi-building"></i> Rooms &amp; Venues</a>
+                <a href="{% url 'officer_workspace' section='allocations' %}" class="nav-link-item"><i class="bi bi-people"></i> Student Allocation</a>
+                <a href="{% url 'officer_workspace' section='invigilators' %}" class="nav-link-item"><i class="bi bi-person-badge"></i> Invigilators</a>
+                <a href="{% url 'officer_workspace' section='eligibility' %}" class="nav-link-item"><i class="bi bi-shield-check"></i> Eligibility</a>
+                <a href="{% url 'officer_workspace' section='attendance' %}" class="nav-link-item"><i class="bi bi-person-check"></i> Attendance</a>
+                <a href="{% url 'officer_workspace' section='booklets' %}" class="nav-link-item"><i class="bi bi-journal-bookmark"></i> Booklet Tracking</a>
+                <a href="{% url 'officer_sessions' %}" class="nav-link-item"><i class="bi bi-broadcast"></i> Active Sessions</a>
+                <a href="{% url 'officer_results_dashboard' %}" class="nav-link-item"><i class="bi bi-journal-check"></i> Results Authority</a>
+                <a href="{% url 'officer_workspace' section='malpractice' %}" class="nav-link-item"><i class="bi bi-shield-exclamation"></i> Malpractice</a>
+                <a href="{% url 'officer_workspace' section='reconciliation' %}" class="nav-link-item"><i class="bi bi-arrow-left-right"></i> Reconciliation</a>
+                <a href="{% url 'officer_workspace' section='anomalies' %}" class="nav-link-item"><i class="bi bi-exclamation-diamond"></i> Anomalies</a>
+                <a href="{% url 'officer_workspace' section='verification' %}" class="nav-link-item"><i class="bi bi-patch-check"></i> Verification</a>
+                <a href="{% url 'officer_workspace' section='reports' %}" class="nav-link-item"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
+                <a href="{% url 'officer_workspace' section='notifications' %}" class="nav-link-item"><i class="bi bi-bell"></i> Notifications{% if officer_unread_notifications %}<span class="officer-nav-count">{{ officer_unread_notifications }}</span>{% endif %}</a>
+                <a href="{% url 'officer_workspace' section='integrations' %}" class="nav-link-item"><i class="bi bi-diagram-2"></i> ERP Integration</a>
+                <a href="{% url 'officer_workspace' section='profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> Profile</a>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+            </nav>
+        </div>
+    </div>
+    {% elif user.is_authenticated and user.student_profile %}
             </main>
         </div>
     </div>
@@ -909,7 +1228,7 @@
             <div class="d-flex justify-content-around w-100">
                 <a href="{% url 'student_dashboard' %}" class="btn btn-link text-dark p-2"><i class="bi bi-house d-block fs-5"></i><small>Home</small></a>
                 <a href="{% url 'student_timetable' %}" class="btn btn-link text-dark p-2"><i class="bi bi-calendar3 d-block fs-5"></i><small>Exams</small></a>
-                <a href="{% url 'student_exam_pass' %}" class="btn btn-link text-dark p-2"><i class="bi bi-card-heading d-block fs-5"></i><small>Pass</small></a>
+                <a href="{% url 'student_exam_pass' %}" class="btn btn-link text-dark p-2"><i class="bi bi-card-heading d-block fs-5"></i><small>Exam Card</small></a>
                 <a href="{% url 'student_notifications' %}" class="btn btn-link text-dark p-2"><i class="bi bi-bell d-block fs-5"></i><small>Alerts</small></a>
                 <button type="button" class="btn btn-link text-dark p-2" data-bs-toggle="offcanvas" data-bs-target="#studentMobileMenu" aria-controls="studentMobileMenu"><i class="bi bi-three-dots d-block fs-5"></i><small>More</small></button>
             </div>
@@ -923,10 +1242,9 @@
         <div class="offcanvas-body">
             <nav class="sidebar-nav" aria-label="Mobile student navigation">
                 <a href="{% url 'student_dashboard' %}" class="nav-link-item"><i class="bi bi-house-door"></i> Dashboard</a>
-                <a href="{% url 'student_examinations' %}" class="nav-link-item"><i class="bi bi-journal-check"></i> My Examinations</a>
                 <a href="{% url 'student_timetable' %}" class="nav-link-item"><i class="bi bi-calendar3"></i> Timetable</a>
                 <a href="{% url 'student_eligibility' %}" class="nav-link-item"><i class="bi bi-shield-check"></i> Eligibility</a>
-                <a href="{% url 'student_exam_pass' %}" class="nav-link-item"><i class="bi bi-card-heading"></i> Examination Pass</a>
+                <a href="{% url 'student_exam_pass' %}" class="nav-link-item"><i class="bi bi-card-heading"></i> Exam Card</a>
                 <a href="{% url 'student_navigation' %}" class="nav-link-item"><i class="bi bi-geo-alt"></i> Navigate to Venue</a>
                 <a href="{% url 'student_results' %}" class="nav-link-item"><i class="bi bi-award"></i> Results</a>
                 <a href="{% url 'student_notifications' %}" class="nav-link-item"><i class="bi bi-bell"></i> Notifications</a>
@@ -934,12 +1252,27 @@
                 <a href="{% url 'student_history' %}" class="nav-link-item"><i class="bi bi-clock-history"></i> Exam History</a>
                 <a href="{% url 'student_profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> My Profile</a>
                 <a href="{% url 'student_help' %}" class="nav-link-item"><i class="bi bi-question-circle"></i> Help &amp; Support</a>
-                <form method="post" action="{% url 'student_logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
             </nav>
         </div>
     </div>
     {% elif user.is_authenticated and user.lecturer_profile %}
             </main>
+        </div>
+    </div>
+    <div class="offcanvas offcanvas-start mobile-lecturer-menu d-lg-none" tabindex="-1" id="lecturerMobileMenu" aria-labelledby="lecturerMobileMenuLabel">
+        <div class="offcanvas-header">
+            <h2 class="offcanvas-title h5" id="lecturerMobileMenuLabel">Lecturer Portal</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close navigation"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav class="sidebar-nav" aria-label="Mobile lecturer navigation">
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-grid-1x2"></i> Dashboard</a>
+                <a href="{% url 'invigilator_dashboard' %}" class="nav-link-item"><i class="bi bi-calendar-check"></i> My Duties</a>
+                <a href="{% url 'lecturer_results_dashboard' %}" class="nav-link-item"><i class="bi bi-journal-text"></i> Examinations &amp; Results</a>
+                <a href="{% url 'lecturer_profile' %}" class="nav-link-item"><i class="bi bi-person-circle"></i> Profile</a>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="nav-link-item border-0 bg-transparent w-100 text-start"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+            </nav>
         </div>
     </div>
     {% else %}
@@ -952,7 +1285,133 @@
         </div>
     </footer>
 
+    <div hidden id="csrf-token-source">{% csrf_token %}</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        (function () {
+            const tabKey = 'examinationengine_tab_session';
+            const paramName = '__tab_session__';
+            const currentUrl = new URL(window.location.href);
+            const makeTabId = () => {
+                if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                    return window.crypto.randomUUID();
+                }
+                if (!window.crypto || typeof window.crypto.getRandomValues !== 'function') {
+                    throw new Error('Secure browser randomness is required to create a tab session.');
+                }
+                return Array.from(window.crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, '0')).join('');
+            };
+            const tabIdPattern = /^[A-Za-z0-9_-]{20,64}$/;
+            const hasTabParam = currentUrl.searchParams.has(paramName);
+            let tabId = currentUrl.searchParams.get(paramName);
+
+            if (!tabId || !tabIdPattern.test(tabId)) {
+                const storedTabId = window.sessionStorage.getItem(tabKey);
+                if (hasTabParam) {
+                    tabId = makeTabId();
+                } else {
+                    tabId = storedTabId && tabIdPattern.test(storedTabId) ? storedTabId : makeTabId();
+                }
+                currentUrl.searchParams.set(paramName, tabId);
+                window.sessionStorage.setItem(tabKey, tabId);
+                window.location.replace(currentUrl.toString());
+                return;
+            }
+            window.sessionStorage.setItem(tabKey, tabId);
+
+            if (navigator.locks && typeof navigator.locks.request === 'function') {
+                navigator.locks.request(`examinationengine-tab-${tabId}`, {
+                    mode: 'exclusive',
+                    ifAvailable: true
+                }, (lock) => {
+                    if (!lock) {
+                        const duplicateUrl = new URL(window.location.href);
+                        duplicateUrl.searchParams.set(paramName, makeTabId());
+                        window.location.replace(duplicateUrl.toString());
+                        return;
+                    }
+                    return new Promise(() => {});
+                }).catch((error) => {
+                    console.error('Unable to reserve this tab session.', error);
+                });
+            }
+
+            function withTabParam(url) {
+                if (!url || url.startsWith('#') || url.startsWith('mailto:') || url.startsWith('javascript:') || url.startsWith('tel:')) {
+                    return url;
+                }
+                try {
+                    const parsed = new URL(url, window.location.origin);
+                    if (parsed.origin !== window.location.origin) {
+                        return url;
+                    }
+                    parsed.searchParams.set(paramName, tabId);
+                    return parsed.toString();
+                } catch (error) {
+                    return url;
+                }
+            }
+
+            document.querySelectorAll('a[href]').forEach((link) => {
+                const href = link.getAttribute('href');
+                if (href) {
+                    link.setAttribute('href', withTabParam(href));
+                }
+            });
+
+            document.addEventListener('click', function (event) {
+                const target = event.target instanceof Element ? event.target : event.target.parentElement;
+                const link = target && target.closest('a[href]');
+                if (!link || link.origin !== window.location.origin) {
+                    return;
+                }
+                if (link.target === '_blank' || event.button === 1 || event.ctrlKey || event.metaKey) {
+                    const targetUrl = new URL(link.href);
+                    targetUrl.searchParams.set(paramName, makeTabId());
+                    const originalHref = link.href;
+                    link.href = targetUrl.toString();
+                    window.setTimeout(() => {
+                        link.href = originalHref;
+                    }, 0);
+                }
+            }, true);
+
+            document.addEventListener('submit', function (event) {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) {
+                    return;
+                }
+                if (form.querySelector(`input[name="${paramName}"]`)) {
+                    return;
+                }
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = paramName;
+                hiddenInput.value = tabId;
+                form.appendChild(hiddenInput);
+            }, true);
+
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = function (input, init = {}) {
+                const requestUrl = new URL(input instanceof Request ? input.url : input, window.location.href);
+                if (requestUrl.origin !== window.location.origin) {
+                    return originalFetch(input, init);
+                }
+                const headers = new Headers(input instanceof Request ? input.headers : undefined);
+                new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+                headers.set('X-Tab-Session', tabId);
+                return originalFetch(input, { ...init, headers });
+            };
+
+            document.querySelectorAll('[data-auto-dismiss]').forEach((alert) => {
+                window.setTimeout(() => {
+                    if (window.bootstrap && bootstrap.Alert) {
+                        bootstrap.Alert.getOrCreateInstance(alert).close();
+                    }
+                }, Number(alert.dataset.autoDismiss));
+            });
+        })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

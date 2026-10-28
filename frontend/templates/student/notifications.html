@@ -33,34 +33,6 @@
 {% block content %}
 <div class="container py-4">
 
-    <!-- Page Header -->
-    <div class="card card-custom border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle d-none d-sm-block">
-                            <i class="bi bi-bell-fill fs-2"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold mb-1 text-dark">Notification Inbox</h4>
-                            <p class="text-muted mb-0 small">
-                                System alerts, eligibility updates, timetable changes, and results notifications.
-                                {% if unread_count > 0 %}
-                                    <span class="badge bg-primary ms-1">{{ unread_count }} unread</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
-                    {% if unread_count %}<form method="post" action="{% url 'student_notifications_read_all' %}">{% csrf_token %}<button class="btn btn-outline-primary btn-sm" type="submit">Mark all read</button></form>{% endif %}
-                    <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1"><i class="bi bi-arrow-left"></i> Dashboard</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <form method="get" class="exam-filter-form card-custom p-3 mb-3" aria-label="Filter notifications">
         <div class="filter-field"><label for="notification-read" class="form-label">Read status</label><select id="notification-read" name="read" class="form-select"><option value="">All</option><option value="unread" {% if selected_read_filter == 'unread' %}selected{% endif %}>Unread</option><option value="read" {% if selected_read_filter == 'read' %}selected{% endif %}>Read</option></select></div>
         <div class="filter-field"><label for="notification-type" class="form-label">Notification type</label><select id="notification-type" name="type" class="form-select"><option value="">All types</option>{% for code, label in notification_types %}<option value="{{ code }}" {% if selected_type_filter == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
@@ -126,7 +98,7 @@
                                 <!-- Type badge + link -->
                                 <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
                                     <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
-                                        {{ notif.get_notification_type_display }}
+                                        {% if notif.notification_type == 'EXAM_PASS_READY' %}Exam Card Available{% else %}{{ notif.get_notification_type_display }}{% endif %}
                                     </span>
                                     {% if notif.related_link %}
                                         <a href="{{ notif.related_link }}" class="btn btn-link btn-sm p-0 text-primary" style="font-size:0.78rem;">

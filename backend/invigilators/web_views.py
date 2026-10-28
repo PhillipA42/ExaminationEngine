@@ -4,6 +4,7 @@ from functools import wraps
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.views import redirect_to_login
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
@@ -24,7 +25,7 @@ def lecturer_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if not hasattr(request.user, 'lecturer_profile') and not request.user.is_superuser:
             return HttpResponseForbidden("Access restricted: You must have a registered Lecturer profile.")
         return view_func(request, *args, **kwargs)
@@ -33,16 +34,16 @@ def lecturer_required(view_func):
 
 def invigilator_login(request):
     """Backward-compatible redirect to the unified credential-based login page."""
-    next_url = request.GET.get('next') or request.POST.get('next')
-    target = f"/login/?next={next_url}" if next_url else '/login/'
-    return redirect(target)
+    next_url = request.GET.get('next')
+    return redirect_to_login(next_url) if next_url else redirect('login')
 
 
+@require_POST
 def invigilator_logout(request):
     """Invigilator logout view."""
     logout(request)
     messages.info(request, "You have been logged out safely.")
-    return redirect('invigilator_login')
+    return redirect('login')
 
 
 @lecturer_required

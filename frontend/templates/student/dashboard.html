@@ -3,19 +3,28 @@
 {% block title %}Student Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-bottom-card { display: flex; }
+    .dashboard-bottom-card > .section-card {
+        width: 100%;
+        min-height: 300px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row g-4">
     <div class="col-12">
         <div class="hero-card d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
             <div>
-                <div class="page-kicker mb-2" style="letter-spacing:0.08em;">Student Portal</div>
+                <div class="page-kicker mb-2" style="letter-spacing:0.08em;">Student Examination Portal</div>
                 <h2 class="mb-2" style="font-weight:800; letter-spacing:-0.05em; margin:0;">Welcome, {{ student.user.get_full_name|default:student.user.username }}</h2>
                 <p class="mb-0 muted">Here is your examination overview for the current academic period.</p>
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <a href="{% url 'student_examinations' %}" class="primary-btn"><i class="bi bi-journal-check"></i> My examinations</a>
-                <a href="{% url 'student_timetable' %}" class="secondary-btn"><i class="bi bi-calendar3"></i> View timetable</a>
-                <a href="{% url 'student_exam_pass' %}" class="secondary-btn"><i class="bi bi-card-heading"></i> Exam pass</a>
+                <a href="{% url 'student_timetable' %}" class="secondary-btn"><i class="bi bi-calendar3"></i> Timetable</a>
+                <a href="{% url 'student_exam_pass' %}" class="secondary-btn"><i class="bi bi-card-heading"></i> Exam Card</a>
                 <a href="{% url 'student_results' %}" class="secondary-btn"><i class="bi bi-award"></i> View results</a>
             </div>
         </div>
@@ -90,7 +99,7 @@
         {% endif %}
     </div>
 
-    <div class="col-12 col-xl-8">
+    <div class="col-12">
         <div class="section-card card-custom">
             <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
                 <div>
@@ -124,38 +133,7 @@
         </div>
     </div>
 
-    <div class="col-12 col-xl-4">
-        <div class="section-card card-custom">
-            <div class="page-kicker">Quick access</div>
-            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Student tools</h4>
-            <div class="quick-grid">
-                <a href="{% url 'student_timetable' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-calendar3"></i></span><span class="fw-700">Timetable</span></a>
-                <a href="{% url 'student_exam_pass' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-card-heading"></i></span><span class="fw-700">Pass</span></a>
-                {% if next_exam %}<a href="{% url 'student_venue_navigation' allocation_id=next_exam.allocation.id %}" class="quick-action"><span class="quick-icon"><i class="bi bi-geo-alt"></i></span><span class="fw-700">Navigate</span></a>{% endif %}
-                <a href="{% url 'student_results' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-award"></i></span><span class="fw-700">Results</span></a>
-                <a href="{% url 'student_notifications' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-bell"></i></span><span class="fw-700">Alerts</span></a>
-                <a href="{% url 'student_profile' %}" class="quick-action"><span class="quick-icon"><i class="bi bi-person-circle"></i></span><span class="fw-700">Profile</span></a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-4">
-        <div class="section-card card-custom h-100">
-            <div class="page-kicker">Eligibility</div>
-            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Exam clearance</h4>
-            <div class="summary-stack">
-                <div class="score-card">
-                    <div class="chip-status {% if eligibility_status == 'ELIGIBLE' %}status-eligible{% elif eligibility_status == 'NOT_ELIGIBLE' %}status-danger{% else %}status-warning{% endif %}">
-                        {{ eligibility_status|title|cut:'_' }}
-                    </div>
-                    <p class="mb-0 mt-3 muted">{{ eligibility_detail }}</p>
-                    {% if next_exam %}<a href="{% url 'student_eligibility' %}" class="small d-inline-block mt-3">View eligibility details</a>{% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-8">
+    <div class="col-12 col-xl-6 dashboard-bottom-card">
         <div class="section-card card-custom h-100">
             <div class="page-kicker">Recent updates</div>
             <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Examination updates</h4>
@@ -174,6 +152,22 @@
             {% else %}
             <div class="empty-state" style="padding:26px 20px;">No recent updates available.</div>
             {% endif %}
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6 dashboard-bottom-card">
+        <div class="section-card card-custom h-100">
+            <div class="page-kicker">Eligibility</div>
+            <h4 class="fw-bold mb-3" style="letter-spacing:-0.03em;">Exam clearance</h4>
+            <div class="summary-stack">
+                <div class="score-card">
+                    <div class="chip-status {% if eligibility_status == 'ELIGIBLE' %}status-eligible{% elif eligibility_status == 'NOT_ELIGIBLE' %}status-danger{% else %}status-warning{% endif %}">
+                        {{ eligibility_status|title|cut:'_' }}
+                    </div>
+                    <p class="mb-0 mt-3 muted">{{ eligibility_detail }}</p>
+                    {% if next_exam %}<a href="{% url 'student_eligibility' %}" class="small d-inline-block mt-3">View eligibility details</a>{% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>

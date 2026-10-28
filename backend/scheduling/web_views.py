@@ -3,6 +3,7 @@ from functools import wraps
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from django.http import HttpResponseForbidden, JsonResponse
 from django.views.decorators.http import require_POST
@@ -25,7 +26,7 @@ def officer_or_admin_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/invigilator/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         if request.user.is_superuser or getattr(request.user, 'is_exam_officer', False):
             return view_func(request, *args, **kwargs)
         user_roles = set(request.user.user_roles.filter(status='ACTIVE').values_list('role__name', flat=True)) if hasattr(request.user, 'user_roles') else set()

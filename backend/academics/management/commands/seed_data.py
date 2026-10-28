@@ -173,7 +173,7 @@ class Command(BaseCommand):
         if created:
             officer_user.set_password('Password123!')
             officer_user.save()
-            UserRole.objects.create(user=officer_user, role=exam_officer_role)
+        UserRole.objects.get_or_create(user=officer_user, role=exam_officer_role)
 
         # -------------------------------------------------------------
         # 5. STUDENTS & UNIT REGISTRATION

@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} · Examination Control Centre{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block lecturer_page_title %}{{ title }}{% endblock %}
+{% block officer_page_heading %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="officer-workspace">
+    <div class="officer-page-heading">
+        <div>
+            <span class="officer-eyebrow">Examination operations</span>
+            <h1>{{ title }}</h1>
+            <p>{{ description }}</p>
+        </div>
+        {% if section == 'booklets' %}
+        <a class="btn btn-outline-primary" href="?issue=missing"><i class="bi bi-exclamation-circle me-1"></i>Missing serials</a>
+        {% elif section == 'periods' %}
+        <a class="btn btn-primary" href="{% url 'officer_create_period' %}"><i class="bi bi-plus-lg me-1"></i>Create period</a>
+        {% elif section == 'examinations' %}
+        <a class="btn btn-primary" href="{% url 'officer_create_examination' %}"><i class="bi bi-plus-lg me-1"></i>Create examination</a>
+        {% elif section == 'rooms' %}
+        <a class="btn btn-primary" href="{% url 'officer_create_room' %}"><i class="bi bi-plus-lg me-1"></i>Create room</a>
+        {% elif section == 'allocations' and planner_period %}
+        <a class="btn btn-primary" href="{% url 'period_timetable_planner' planner_period.id %}"><i class="bi bi-calendar-week me-1"></i>Open allocation planner</a>
+        {% elif section == 'rooms' and available_examinations and available_rooms %}
+        <form method="post" action="{% url 'officer_workspace' section='rooms' %}" class="d-flex flex-wrap gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="allocate_room">
+            <label class="visually-hidden" for="room-examination">Examination</label>
+            <select class="form-select" name="examination" id="room-examination" required>
+                <option value="">Select examination</option>
+                {% for examination in available_examinations %}<option value="{{ examination.id }}">{{ examination.unit.code }} · {{ examination.period.name }}</option>{% endfor %}
+            </select>
+            <label class="visually-hidden" for="room-choice">Room</label>
+            <select class="form-select" name="room" id="room-choice" required>
+                <option value="">Select room</option>
+                {% for room in available_rooms %}<option value="{{ room.id }}">{{ room.building.name }} · {{ room.name }} ({{ room.capacity }})</option>{% endfor %}
+            </select>
+            <label class="visually-hidden" for="room-capacity">Allocated capacity</label>
+            <input class="form-control" type="number" min="1" name="allocated_capacity" id="room-capacity" placeholder="Capacity" required>
+            <button class="btn btn-primary text-nowrap" type="submit"><i class="bi bi-building-add me-1"></i>Allocate room</button>
+        </form>
+        {% elif section == 'invigilators' and available_examinations and available_rooms and available_lecturers %}
+        <form method="post" action="{% url 'officer_workspace' section='invigilators' %}" class="d-flex flex-wrap gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign_invigilator">
+            <label class="visually-hidden" for="duty-examination">Examination</label>
+            <select class="form-select" name="examination" id="duty-examination" required>
+                <option value="">Select examination</option>
+                {% for examination in available_examinations %}<option value="{{ examination.id }}">{{ examination.unit.code }} · {{ examination.period.name }}</option>{% endfor %}
+            </select>
+            <label class="visually-hidden" for="duty-lecturer">Invigilator</label>
+            <select class="form-select" name="lecturer" id="duty-lecturer" required>
+                <option value="">Select lecturer</option>
+                {% for lecturer in available_lecturers %}<option value="{{ lecturer.id }}">{{ lecturer.user.get_full_name }}</option>{% endfor %}
+            </select>
+            <label class="visually-hidden" for="duty-room">Allocated room</label>
+            <select class="form-select" name="room" id="duty-room" required>
+                <option value="">Select room</option>
+                {% for room in available_rooms %}<option value="{{ room.id }}">{{ room.building.name }} · {{ room.name }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-primary text-nowrap" type="submit"><i class="bi bi-person-plus me-1"></i>Assign invigilator</button>
+        </form>
+        {% elif section == 'verification' %}
+        <form method="post" action="{% url 'officer_workspace' section='verification' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="run_verification">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-play-fill me-1"></i>Run verification</button>
+        </form>
+        {% elif section == 'eligibility' and available_periods %}
+        <form method="post" action="{% url 'officer_workspace' section='eligibility' %}" class="d-flex flex-wrap gap-2">
+            {% csrf_token %}
+            <label class="visually-hidden" for="eligibility-period">Period to refresh</label>
+            <select class="form-select" name="period_id" id="eligibility-period" required>
+                <option value="">Refresh registered students for period</option>
+                {% for period in available_periods %}<option value="{{ period.id }}">{{ period.name }}</option>{% endfor %}
+            </select>
+            <button class="btn btn-primary text-nowrap" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Re-evaluate</button>
+        </form>
+        {% elif section == 'notifications' %}
+        <form method="post" action="{% url 'officer_workspace' section='notifications' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="mark_all_read">
+            <button class="btn btn-outline-primary" type="submit">Mark all read</button>
+        </form>
+        {% elif section == 'reports' %}
+        <span class="officer-status status-info">Authorized exports</span>
+        {% endif %}
+    </div>
+
+    <section class="officer-panel workspace-table-panel">
+        <div class="officer-panel-heading workspace-toolbar">
+            <div>
+                <h2>{{ count }} record{{ count|pluralize }}</h2>
+                <small>Data shown is read from existing authorized system records.</small>
+            </div>
+            {% if section != 'reports' and section != 'integrations' and section != 'profile' %}
+            <form method="get" class="officer-search-form">
+                <label class="visually-hidden" for="officer-search">Search records</label>
+                <input id="officer-search" class="form-control" type="search" name="q" value="{{ search }}" placeholder="Search records">
+                {% if section == 'examinations' %}
+                <select class="form-select" name="period" aria-label="Filter by period">
+                    <option value="">All periods</option>
+                    {% for period in available_periods %}<option value="{{ period.id }}" {% if request.GET.period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% endfor %}
+                </select>
+                <select class="form-select" name="status" aria-label="Filter by status">
+                    <option value="">All statuses</option>
+                    {% for status in status_filter_options %}<option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}
+                </select>
+                <input class="form-control" type="date" name="date" value="{{ date_filter }}" aria-label="Filter by examination date">
+                <select class="form-select" name="allocation" aria-label="Filter by allocation">
+                    <option value="">All allocations</option>
+                    <option value="allocated" {% if allocation_filter == 'allocated' %}selected{% endif %}>Allocated</option>
+                    <option value="unallocated" {% if allocation_filter == 'unallocated' %}selected{% endif %}>Unallocated</option>
+                </select>
+                {% elif section == 'allocations' %}
+                <select class="form-select" name="period" aria-label="Filter by period">
+                    <option value="">All periods</option>
+                    {% for period in available_periods %}<option value="{{ period.id }}" {% if request.GET.period == period.id|stringformat:'s' %}selected{% endif %}>{{ period.name }}</option>{% endfor %}
+                </select>
+                {% elif section == 'rooms' %}
+                <select class="form-select" name="campus" aria-label="Filter by campus">
+                    <option value="">All campuses</option>
+                    {% for campus in available_campuses %}<option value="{{ campus.id }}" {% if campus_filter == campus.id|stringformat:'s' %}selected{% endif %}>{{ campus.name }}</option>{% endfor %}
+                </select>
+                <select class="form-select" name="building" aria-label="Filter by building">
+                    <option value="">All buildings</option>
+                    {% for building in available_buildings %}<option value="{{ building.id }}" {% if building_filter == building.id|stringformat:'s' %}selected{% endif %}>{{ building.name }}</option>{% endfor %}
+                </select>
+                <input class="form-control" type="number" min="1" name="capacity" value="{{ capacity_filter }}" placeholder="Min capacity" aria-label="Minimum room capacity">
+                {% else %}
+                    {% if request.GET.issue %}<input type="hidden" name="issue" value="{{ request.GET.issue }}">{% endif %}
+                    {% if request.GET.report %}<input type="hidden" name="report" value="{{ request.GET.report }}">{% endif %}
+                {% endif %}
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search me-1"></i>Search</button>
+            </form>
+            {% endif %}
+            {% if section == 'reconciliation' and available_examinations %}
+            <form method="post" action="{% url 'officer_run_reconciliation' %}" class="d-flex flex-wrap gap-2">
+                {% csrf_token %}
+                <label class="visually-hidden" for="reconcile-examination">Examination to reconcile</label>
+                <select class="form-select" name="examination_id" id="reconcile-examination" required>
+                    <option value="">Select an examination</option>
+                    {% for examination in available_examinations %}
+                    <option value="{{ examination.id }}">{{ examination.unit.code }} · {{ examination.period.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary text-nowrap" type="submit"><i class="bi bi-arrow-repeat me-1"></i>Run reconciliation</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if section == 'integrations' %}
+        <div class="officer-inline-notice"><i class="bi bi-info-circle"></i> The portal does not expose a synchronization control until the backend has a configured connector and auditable job status.</div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table officer-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        {% for column in columns %}<th>{{ column }}</th>{% endfor %}
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in page_obj %}
+                    <tr>
+                        {% for cell in row.cells %}<td>{{ cell|default:"—" }}</td>{% endfor %}
+                        <td class="text-end text-nowrap">
+                            {% if row.action_url %}<a class="btn btn-sm btn-outline-primary" href="{{ row.action_url }}">{{ row.action_label }}</a>{% endif %}
+                            {% if row.edit_url %}<a class="btn btn-sm btn-outline-secondary" href="{{ row.edit_url }}">Edit</a>{% endif %}
+                            {% if not row.action_url and not row.edit_url %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="12" class="text-center text-muted py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i>No matching records were found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="officer-pagination" aria-label="Workspace pages">
+            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            <div class="btn-group">
+                {% if page_obj.has_previous %}<a class="btn btn-outline-primary btn-sm" href="?q={{ search|urlencode }}&period={{ request.GET.period|urlencode }}&status={{ request.GET.status|urlencode }}&date={{ request.GET.date|urlencode }}&allocation={{ request.GET.allocation|urlencode }}&campus={{ request.GET.campus|urlencode }}&building={{ request.GET.building|urlencode }}&capacity={{ request.GET.capacity|urlencode }}&issue={{ request.GET.issue|urlencode }}&report={{ request.GET.report|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+                {% if page_obj.has_next %}<a class="btn btn-outline-primary btn-sm" href="?q={{ search|urlencode }}&period={{ request.GET.period|urlencode }}&status={{ request.GET.status|urlencode }}&date={{ request.GET.date|urlencode }}&allocation={{ request.GET.allocation|urlencode }}&campus={{ request.GET.campus|urlencode }}&building={{ request.GET.building|urlencode }}&capacity={{ request.GET.capacity|urlencode }}&issue={{ request.GET.issue|urlencode }}&report={{ request.GET.report|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+            </div>
+        </nav>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -14,7 +14,7 @@ cj = http.cookiejar.CookieJar()
 opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 
 # Fetch Student Login Page
-login_page = opener.open('http://127.0.0.1:8000/student/login/').read().decode('utf-8')
+login_page = opener.open('http://127.0.0.1:8000/login/').read().decode('utf-8')
 csrf_token = ""
 for cookie in cj:
     if cookie.name == 'csrftoken':
@@ -30,9 +30,9 @@ login_data = urllib.parse.urlencode({
 }).encode('utf-8')
 
 login_req = urllib.request.Request(
-    'http://127.0.0.1:8000/student/login/',
+    'http://127.0.0.1:8000/login/',
     data=login_data,
-    headers={'Referer': 'http://127.0.0.1:8000/student/login/'}
+    headers={'Referer': 'http://127.0.0.1:8000/login/'}
 )
 login_resp = opener.open(login_req)
 print(f"[2] Student Authenticated Successfully -> Redirected to: {login_resp.geturl()}")
@@ -56,7 +56,7 @@ cj2 = http.cookiejar.CookieJar()
 opener2 = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj2))
 
 # Fetch Invigilator Login Page
-inv_login_page = opener2.open('http://127.0.0.1:8000/invigilator/login/').read().decode('utf-8')
+inv_login_page = opener2.open('http://127.0.0.1:8000/login/').read().decode('utf-8')
 csrf_token2 = ""
 for cookie in cj2:
     if cookie.name == 'csrftoken':
@@ -72,9 +72,9 @@ inv_login_data = urllib.parse.urlencode({
 }).encode('utf-8')
 
 inv_login_req = urllib.request.Request(
-    'http://127.0.0.1:8000/invigilator/login/',
+    'http://127.0.0.1:8000/login/',
     data=inv_login_data,
-    headers={'Referer': 'http://127.0.0.1:8000/invigilator/login/'}
+    headers={'Referer': 'http://127.0.0.1:8000/login/'}
 )
 inv_login_resp = opener2.open(inv_login_req)
 print(f"[6] Invigilator Authenticated Successfully -> Redirected to: {inv_login_resp.geturl()}")

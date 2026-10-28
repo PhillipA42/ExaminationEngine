@@ -64,6 +64,13 @@ class User(AbstractUser):
             return self.lecturer_profile.duties.count()
         return 0
 
+
+class BrowserTabSession(models.Model):
+    tab_id = models.CharField(max_length=64, primary_key=True)
+    session_key = models.CharField(max_length=64, unique=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
 class Role(models.Model):
     ADMIN = 'ADMIN'
     EXAM_OFFICER = 'EXAM_OFFICER'

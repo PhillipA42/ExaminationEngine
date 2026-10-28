@@ -7,17 +7,19 @@ The `urlpatterns` list routes URLs to views. For more information please see:
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-from authentication.views import unified_login
+from authentication.views import unified_login, unified_logout
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', unified_login, name='login'),
+    path('logout/', unified_logout, name='logout'),
     
     # Web Portals
     path('invigilator/', include('invigilators.urls')),
     path('student/', include('academics.student_urls')),
     path('results/', include('academics.results_urls')),
     path('scheduling/', include('scheduling.web_urls')),
+    path('officer/', include('academics.officer_urls')),
     path('', RedirectView.as_view(url='/login/', permanent=False)),
 
     # REST APIs

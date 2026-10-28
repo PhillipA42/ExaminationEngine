@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Case {{ case.case_number }} · Examination Control Centre{% endblock %}
+{% block page_title %}Malpractice Case Review{% endblock %}
+{% block lecturer_page_title %}Malpractice Case Review{% endblock %}
+{% block officer_page_heading %}Malpractice Case Review{% endblock %}
+
+{% block content %}
+<div class="officer-workspace">
+    <div class="officer-page-heading">
+        <div>
+            <span class="officer-eyebrow">Confidential · Allegation, not a finding</span>
+            <h1>Case {{ case.case_number }}</h1>
+            <p>{{ case.examination.unit.code }} · {{ case.examination.unit.name }} · {{ case.examination.period.name }}</p>
+        </div>
+        <span class="officer-status {% if case.status == 'DISMISS' or case.status == 'SANCTIONED' %}status-complete{% else %}status-pending{% endif %}">{{ case.get_status_display }}</span>
+    </div>
+
+    <section class="officer-panel officer-detail-panel">
+        <dl class="officer-detail-grid">
+            <div><dt>Student</dt><dd>{{ case.student.registration_number }} · {{ case.student.user.get_full_name }}</dd></div>
+            <div><dt>Allegation category</dt><dd>{{ case.incident_type }}</dd></div>
+            <div><dt>Severity</dt><dd>{{ case.get_severity_display }}</dd></div>
+            <div><dt>Reported</dt><dd>{{ case.reported_at|date:"d M Y, H:i" }}</dd></div>
+            <div><dt>Venue</dt><dd>{{ case.room.building.campus.name }} · {{ case.room.building.name }} · {{ case.room.name }}</dd></div>
+            <div><dt>Reported by</dt><dd>{{ case.reported_by.user.get_full_name|default:"Not recorded" }}</dd></div>
+        </dl>
+
+        <div class="officer-detail-section">
+            <h2>Incident description</h2>
+            <p>{{ case.description }}</p>
+        </div>
+
+        <div class="officer-detail-section">
+            <h2>Evidence files</h2>
+            <div class="officer-evidence-list">
+                {% for evidence in case.evidence_files.all %}
+                <a href="{% url 'officer_case_evidence' evidence.id %}" class="officer-evidence-item">
+                    <i class="bi bi-file-earmark-lock"></i>
+                    <span><strong>{{ evidence.file.name|cut:"malpractice_evidence/" }}</strong><small>{{ evidence.description|default:"No description" }} · Uploaded {{ evidence.uploaded_at|date:"d M Y, H:i" }}</small></span>
+                    <i class="bi bi-download"></i>
+                </a>
+                {% empty %}<p class="text-muted mb-0">No evidence files have been uploaded.</p>{% endfor %}
+            </div>
+            <form method="post" enctype="multipart/form-data" class="officer-evidence-upload mt-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="upload_evidence">
+                <label for="case-evidence-file" class="form-label fw-semibold">Add evidence</label>
+                <input class="form-control" id="case-evidence-file" type="file" name="file" accept=".jpg,.jpeg,.png,.pdf,.txt" required>
+                <div class="form-text">JPG, PNG, PDF or TXT; maximum 10 MB.</div>
+                <label for="case-evidence-description" class="form-label fw-semibold mt-2">Description</label>
+                <input class="form-control" id="case-evidence-description" type="text" name="description" maxlength="255">
+                <button class="btn btn-outline-primary mt-3" type="submit"><i class="bi bi-upload me-1"></i>Upload evidence</button>
+            </form>
+        </div>
+
+        {% if case.determination %}
+        <div class="officer-detail-section">
+            <h2>Latest review note / determination</h2>
+            <p>{{ case.determination }}</p>
+            {% if case.reviewed_by %}<small class="text-muted">Recorded by {{ case.reviewed_by.user.get_full_name }} · {{ case.reviewed_at|date:"d M Y, H:i" }}</small>{% endif %}
+        </div>
+        {% endif %}
+
+        <div class="officer-detail-section">
+            <h2>Case timeline</h2>
+            <div class="officer-activity-list">
+                {% for event in case.audit_events.all %}
+                <div class="officer-activity-item">
+                    <span class="activity-dot"></span>
+                    <span><strong>{{ event.action|title }}</strong><small>{{ event.actor.user.get_full_name|default:"System" }} · {{ event.details }}</small><time>{{ event.created_at|date:"d M Y, H:i" }}</time></span>
+                </div>
+                {% empty %}<p class="text-muted">No audit events have been recorded.</p>{% endfor %}
+            </div>
+        </div>
+
+        {% if allowed_transitions %}
+        <form method="post" class="officer-detail-section">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="transition">
+            <label for="case-next-status" class="form-label fw-semibold">Next authorized status</label>
+            <select class="form-select" id="case-next-status" name="status" required>
+                {% for status in allowed_transitions %}
+                <option value="{{ status }}">{% if status == 'UNDER_INVESTIGATION' %}Under Investigation{% elif status == 'DISMISS' %}Dismiss{% else %}Sanctioned{% endif %}</option>
+                {% endfor %}
+            </select>
+            <label for="case-determination" class="form-label fw-semibold mt-3">Review note or determination</label>
+            <textarea class="form-control" id="case-determination" name="determination" rows="4" required></textarea>
+            <button class="btn btn-primary mt-3" type="submit"><i class="bi bi-arrow-right-circle me-1"></i>Save case transition</button>
+        </form>
+        {% endif %}
+        <div class="pt-3"><a href="{% url 'officer_workspace' section='malpractice' %}" class="btn btn-outline-secondary">Back to cases</a></div>
+    </section>
+</div>
+{% endblock %}

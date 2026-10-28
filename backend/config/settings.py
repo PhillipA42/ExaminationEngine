@@ -59,7 +59,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'authentication.middleware.TabSessionCookieCleanupMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'authentication.middleware.TabSessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -108,6 +110,7 @@ DATABASES = {
 
 # Custom User Model Configuration
 AUTH_USER_MODEL = 'authentication.User'
+CSRF_USE_SESSIONS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

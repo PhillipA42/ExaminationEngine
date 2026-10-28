@@ -6,7 +6,6 @@ urlpatterns = [
     path('login/', student_views.student_login, name='student_login'),
     path('logout/', student_views.student_logout, name='student_logout'),
     path('profile/', student_views.student_profile, name='student_profile'),
-    path('examinations/', student_views.student_timetable, name='student_examinations'),
     path('timetable/', student_views.student_timetable, name='student_timetable'),
     path('eligibility/', student_views.student_eligibility, name='student_eligibility'),
     path('attendance/', student_views.student_attendance, name='student_attendance'),

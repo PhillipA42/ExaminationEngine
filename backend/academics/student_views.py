@@ -4,6 +4,7 @@ from functools import wraps
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
 from django.contrib.auth import logout
+from django.contrib.auth.views import redirect_to_login
 from django.contrib import messages
 from django.http import HttpResponseForbidden
 from django.core import signing
@@ -65,13 +66,18 @@ def student_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"/student/login/?next={request.path}")
+            return redirect_to_login(request.get_full_path())
         student = getattr(request.user, 'student_profile', None)
         if student is None:
+            if getattr(request.user, 'is_exam_officer', False):
+                return redirect('officer_dashboard')
             if hasattr(request.user, 'lecturer_profile'):
                 messages.info(request, "This account is registered for the Lecturer Portal. Redirected to your lecturer dashboard.")
                 return redirect('invigilator_dashboard')
-            return HttpResponseForbidden("A registered student profile is required to access the Student Portal.")
+            if request.user.is_superuser:
+                return redirect('invigilator_dashboard')
+            messages.info(request, "This account has no registered student profile. Sign in with a student account to access the Student Portal.")
+            return redirect('login')
         if student.status != 'ACTIVE':
             return HttpResponseForbidden("An active student profile is required to access the Student Portal.")
         return view_func(request, *args, **kwargs)
@@ -79,30 +85,36 @@ def student_required(view_func):
 
 
 def student_portal_context(request):
-    """Shared student-shell data, scoped to the authenticated account."""
-    if not request.user.is_authenticated or not hasattr(request.user, 'student_profile'):
+    """Provide role-specific notification counts for shared portal navigation."""
+    if not request.user.is_authenticated:
         return {}
     from academics.models import Notification
-    return {
-        'student_unread_notifications': Notification.objects.filter(
+
+    context = {}
+    if hasattr(request.user, 'student_profile'):
+        context['student_unread_notifications'] = Notification.objects.filter(
             recipient=request.user, is_read=False
-        ).count(),
-    }
+        ).count()
+    if getattr(request.user, 'is_exam_officer', False):
+        context['officer_unread_notifications'] = Notification.objects.filter(
+            recipient=request.user, is_read=False
+        ).count()
+    return context
 
 
 def student_login(request):
     """Backward-compatible redirect to the single credential-based login page."""
-    next_url = request.GET.get('next') or request.POST.get('next')
-    target = f"/login/?next={next_url}" if next_url else '/login/'
-    return redirect(target)
+    next_url = request.GET.get('next')
+    return redirect_to_login(next_url) if next_url else redirect('login')
 
 
+@require_POST
 @require_POST
 def student_logout(request):
     """Student portal logout view."""
     logout(request)
     messages.info(request, "You have been logged out safely.")
-    return redirect('student_login')
+    return redirect('login')
 
 
 @student_required
@@ -394,7 +406,7 @@ def student_exam_pass(request):
 def exam_pass_verification(request):
     """Staff-only pass validation; never exposes marks, evidence, or other data."""
     if not request.user.is_authenticated:
-        return redirect(f"/invigilator/login/?next={request.path}")
+        return redirect_to_login(request.get_full_path())
     roles = set(request.user.user_roles.filter(status='ACTIVE').values_list('role__name', flat=True)) if hasattr(request.user, 'user_roles') else set()
     lecturer = getattr(request.user, 'lecturer_profile', None)
     if not (request.user.is_superuser or lecturer or roles & {'EXAM_OFFICER', 'ADMIN'}):

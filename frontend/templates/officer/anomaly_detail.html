@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Anomaly Details · Examination Control Centre{% endblock %}
+{% block page_title %}Anomaly Details{% endblock %}
+{% block lecturer_page_title %}Anomaly Details{% endblock %}
+{% block officer_page_heading %}Anomaly Details{% endblock %}
+
+{% block content %}
+<div class="officer-workspace">
+    <div class="officer-page-heading">
+        <div>
+            <span class="officer-eyebrow">Reconciliation investigation</span>
+            <h1>{{ anomaly.get_anomaly_type_display }}</h1>
+            <p>{{ anomaly.report.examination.unit.code }} · {{ anomaly.report.examination.period.name }}</p>
+        </div>
+        <span class="officer-status {% if anomaly.is_resolved %}status-complete{% else %}status-pending{% endif %}">
+            {% if anomaly.is_resolved %}Resolved{% else %}Unresolved{% endif %}
+        </span>
+    </div>
+
+    <section class="officer-panel officer-detail-panel">
+        <dl class="officer-detail-grid">
+            <div><dt>Severity</dt><dd>{{ anomaly.get_severity_display }}</dd></div>
+            <div><dt>Affected student</dt><dd>{% if anomaly.student %}{{ anomaly.student.registration_number }} · {{ anomaly.student.user.get_full_name }}{% else %}General examination issue{% endif %}</dd></div>
+            <div><dt>Detected</dt><dd>{{ anomaly.created_at|date:"d M Y, H:i" }}</dd></div>
+            <div><dt>Reconciliation report</dt><dd>#{{ anomaly.report_id }} · {{ anomaly.report.get_status_display }}</dd></div>
+        </dl>
+        <div class="officer-detail-section">
+            <h2>Issue</h2>
+            <p>{{ anomaly.description }}</p>
+        </div>
+        {% if anomaly.evidence_summary %}
+        <div class="officer-detail-section">
+            <h2>Recorded evidence</h2>
+            <p>{{ anomaly.evidence_summary }}</p>
+        </div>
+        {% endif %}
+        {% if anomaly.is_resolved %}
+        <div class="officer-inline-notice"><i class="bi bi-check-circle"></i><span>Resolved {{ anomaly.resolved_at|date:"d M Y, H:i" }} by {{ anomaly.resolved_by.get_full_name|default:anomaly.resolved_by.username }}.<br>{{ anomaly.resolution_notes }}</span></div>
+        {% else %}
+        <form method="post" class="officer-detail-section">
+            {% csrf_token %}
+            <label for="resolution-notes" class="form-label fw-semibold">Resolution notes</label>
+            <textarea class="form-control" id="resolution-notes" name="resolution_notes" rows="4" required placeholder="Describe the investigation and how this discrepancy was resolved."></textarea>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+                <a class="btn btn-outline-secondary" href="{% url 'officer_workspace' section='anomalies' %}">Back to anomalies</a>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg me-1"></i>Record resolution</button>
+            </div>
+        </form>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
